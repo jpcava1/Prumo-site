@@ -34,16 +34,14 @@ Abra http://localhost:8080. No modo demonstração, entre com qualquer e-mail e 
 ### 2. Subir no GitHub
 
 1. Crie um repositório **privado** no GitHub (ex.: `prumo-site`).
-2. Nesta pasta:
+2. A pasta já vem com o histórico do Git e um primeiro commit. Nesta pasta:
 
 ```bash
-git init
-git add .
-git commit -m "Prumo: site inicial"
-git branch -M main
 git remote add origin https://github.com/SEU-USUARIO/prumo-site.git
 git push -u origin main
 ```
+
+(Se a pasta chegou sem a subpasta oculta `.git`, rode antes: `git init && git add . && git commit -m "Prumo: site inicial" && git branch -M main`.)
 
 O GitHub roda os testes sozinho a cada envio (`.github/workflows/ci.yml`).
 
