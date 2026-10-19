@@ -1,0 +1,356 @@
+import type { Question, TriageDefinition } from "@/lib/triage/schema";
+import type { CareLineSlug } from "@/content/careLines";
+
+/**
+ * Triagem versão 1 (briefing, seção 7).
+ * ATENÇÃO: a versão final precisa ser aprovada pelo médico diretor técnico.
+ * Em produção a triagem vem da tabela triage_versions; este arquivo gera o seed
+ * (npm run seed:triage) e serve ao modo demonstração.
+ */
+
+const common: Question[] = [
+  {
+    id: "sexo",
+    type: "single",
+    label: "Qual é o seu sexo ao nascer?",
+    help: "Algumas condições e cuidados mudam conforme o sexo biológico.",
+    required: true,
+    options: [
+      { value: "F", label: "Feminino" },
+      { value: "M", label: "Masculino" },
+    ],
+  },
+  {
+    id: "gestacao",
+    type: "single",
+    label: "Você está grávida, amamentando ou tentando engravidar?",
+    required: true,
+    showIf: { q: "sexo", op: "eq", value: "F" },
+    options: [
+      { value: "nao", label: "Não" },
+      { value: "gravida", label: "Estou grávida" },
+      { value: "amamentando", label: "Estou amamentando" },
+      { value: "tentando", label: "Estou tentando engravidar" },
+    ],
+    alert: { when: { q: "gestacao", op: "in", value: ["gravida", "amamentando", "tentando"] }, code: "gestacao", label: "Gestação, amamentação ou tentativa de engravidar" },
+  },
+  { id: "peso", type: "number", label: "Qual é o seu peso?", unit: "kg", min: 30, max: 300, required: true },
+  { id: "altura", type: "number", label: "Qual é a sua altura?", unit: "cm", min: 120, max: 230, required: true },
+  {
+    id: "doencas",
+    type: "multi",
+    label: "Você tem ou já teve alguma destas condições?",
+    required: true,
+    exclusiveValue: "nenhuma",
+    options: [
+      { value: "pressao_alta", label: "Pressão alta" },
+      { value: "coracao", label: "Doença do coração" },
+      { value: "figado", label: "Doença do fígado" },
+      { value: "rins", label: "Doença dos rins" },
+      { value: "diabetes", label: "Diabetes" },
+      { value: "tireoide", label: "Problema de tireoide" },
+      { value: "cancer", label: "Câncer" },
+      { value: "nenhuma", label: "Nenhuma" },
+    ],
+    alert: { when: { q: "doencas", op: "includesAny", value: ["coracao", "figado", "rins", "cancer"] }, code: "comorbidade", label: "Doença de coração, fígado, rins ou câncer" },
+  },
+  {
+    id: "uso_atual",
+    type: "text",
+    label: "Você usa algum remédio, vitamina ou suplemento hoje? Quais?",
+    help: "Se não usa nada, escreva \"nenhum\".",
+    maxLength: 600,
+    required: true,
+  },
+  {
+    id: "alergias",
+    type: "text",
+    label: "Você tem alergia a algum remédio ou substância? Qual?",
+    help: "Se não tem, escreva \"nenhuma\".",
+    maxLength: 400,
+    required: true,
+  },
+  {
+    id: "cirurgia_recente",
+    type: "yesno",
+    label: "Você fez cirurgia ou ficou internado nos últimos 6 meses?",
+    required: true,
+    options: [
+      { value: "sim", label: "Sim" },
+      { value: "nao", label: "Não" },
+    ],
+    alert: { when: { q: "cirurgia_recente", op: "eq", value: "sim" }, code: "cirurgia_recente", label: "Cirurgia ou internação nos últimos 6 meses" },
+  },
+  {
+    id: "urgencia",
+    type: "multi",
+    label: "Agora, neste momento, você sente algum destes sinais?",
+    required: true,
+    exclusiveValue: "nenhum",
+    options: [
+      { value: "dor_peito", label: "Dor ou aperto no peito" },
+      { value: "falta_ar", label: "Falta de ar" },
+      { value: "desmaio", label: "Desmaio ou quase desmaio" },
+      { value: "fraqueza_lado", label: "Fraqueza ou formigamento de um lado do corpo" },
+      { value: "sangramento", label: "Sangramento que não para" },
+      { value: "nenhum", label: "Nenhum destes" },
+    ],
+    block: { when: { q: "urgencia", op: "excludesAll", value: ["nenhum"] }, kind: "emergency" },
+  },
+];
+
+const closing: Question[] = [
+  {
+    id: "relato",
+    type: "text",
+    label: "Conte com suas palavras o que está acontecendo e o que você espera da consulta.",
+    maxLength: 1000,
+    required: true,
+  },
+];
+
+const byLine: Record<CareLineSlug, Question[]> = {
+  cabelo: [
+    {
+      id: "cabelo_tempo",
+      type: "single",
+      label: "Há quanto tempo você percebe a queda?",
+      required: true,
+      options: [
+        { value: "menos_3m", label: "Menos de 3 meses" },
+        { value: "3_12m", label: "De 3 a 12 meses" },
+        { value: "mais_1a", label: "Mais de 1 ano" },
+      ],
+    },
+    {
+      id: "cabelo_onde",
+      type: "multi",
+      label: "Onde você percebe a queda?",
+      required: true,
+      options: [
+        { value: "entradas", label: "Entradas" },
+        { value: "topo", label: "Topo da cabeça" },
+        { value: "difusa", label: "Em toda a cabeça" },
+        { value: "falhas_redondas", label: "Falhas redondas" },
+      ],
+      alert: { when: { q: "cabelo_onde", op: "includesAny", value: ["falhas_redondas"] }, code: "falhas_redondas", label: "Falhas redondas (avaliar necessidade de exame presencial)" },
+    },
+    {
+      id: "cabelo_familia",
+      type: "yesno",
+      label: "Alguém da sua família tem calvície?",
+      required: true,
+      options: [
+        { value: "sim", label: "Sim" },
+        { value: "nao", label: "Não" },
+        { value: "nao_sei", label: "Não sei" },
+      ],
+    },
+    {
+      id: "cabelo_couro",
+      type: "multi",
+      label: "Você tem algum destes sinais no couro cabeludo?",
+      required: true,
+      exclusiveValue: "nenhum",
+      options: [
+        { value: "coceira", label: "Coceira" },
+        { value: "descamacao", label: "Descamação" },
+        { value: "feridas", label: "Feridas" },
+        { value: "nenhum", label: "Nenhum" },
+      ],
+      alert: { when: { q: "cabelo_couro", op: "includesAny", value: ["feridas"] }, code: "feridas_couro", label: "Feridas no couro cabeludo" },
+    },
+    {
+      id: "cabelo_tentativas",
+      type: "text",
+      label: "Você já tratou a queda antes? Com o quê?",
+      help: "Se nunca tratou, escreva \"nunca\".",
+      maxLength: 500,
+      required: true,
+    },
+    {
+      id: "cabelo_fotos",
+      type: "photos",
+      label: "Quer enviar fotos do couro cabeludo? (opcional)",
+      help: "Frente, topo e lateral, com boa luz. Só o médico vê.",
+      maxFiles: 3,
+      required: false,
+    },
+  ],
+  pele: [
+    {
+      id: "pele_queixa",
+      type: "single",
+      label: "Qual é a sua principal queixa?",
+      required: true,
+      options: [
+        { value: "manchas", label: "Manchas" },
+        { value: "oleosidade", label: "Oleosidade ou espinhas leves" },
+        { value: "envelhecimento", label: "Sinais do tempo" },
+        { value: "outra", label: "Outra" },
+      ],
+    },
+    {
+      id: "pele_tempo",
+      type: "single",
+      label: "Há quanto tempo?",
+      required: true,
+      options: [
+        { value: "menos_3m", label: "Menos de 3 meses" },
+        { value: "3_12m", label: "De 3 a 12 meses" },
+        { value: "mais_1a", label: "Mais de 1 ano" },
+      ],
+    },
+    {
+      id: "pele_protetor",
+      type: "yesno",
+      label: "Você usa protetor solar todos os dias?",
+      required: true,
+      options: [
+        { value: "sim", label: "Sim" },
+        { value: "as_vezes", label: "Às vezes" },
+        { value: "nao", label: "Não" },
+      ],
+    },
+    {
+      id: "pele_produtos",
+      type: "text",
+      label: "Que cremes ou produtos você usa hoje no rosto ou na pele?",
+      help: "Se não usa nada, escreva \"nenhum\".",
+      maxLength: 500,
+      required: true,
+    },
+    {
+      id: "pele_pinta",
+      type: "yesno",
+      label: "Você tem alguma pinta ou mancha que mudou de cor, cresceu ou sangra?",
+      required: true,
+      options: [
+        { value: "sim", label: "Sim" },
+        { value: "nao", label: "Não" },
+      ],
+      alert: { when: { q: "pele_pinta", op: "eq", value: "sim" }, code: "lesao_suspeita", label: "Pinta que mudou: avaliação presencial recomendada" },
+    },
+    {
+      id: "pele_fotos",
+      type: "photos",
+      label: "Quer enviar fotos da área? (opcional)",
+      help: "Com boa luz e sem filtro. Só o médico vê.",
+      maxFiles: 3,
+      required: false,
+    },
+  ],
+  "sono-e-energia": [
+    {
+      id: "sono_horas",
+      type: "number",
+      label: "Quantas horas você dorme por noite, em média?",
+      unit: "horas",
+      min: 0,
+      max: 16,
+      required: true,
+    },
+    {
+      id: "sono_dificuldade",
+      type: "multi",
+      label: "O que acontece com o seu sono?",
+      required: true,
+      exclusiveValue: "nenhuma",
+      options: [
+        { value: "demora_dormir", label: "Demoro para dormir" },
+        { value: "acorda_noite", label: "Acordo durante a noite" },
+        { value: "acorda_cedo", label: "Acordo cedo demais" },
+        { value: "acorda_cansado", label: "Acordo cansado" },
+        { value: "nenhuma", label: "Nenhuma destas" },
+      ],
+    },
+    {
+      id: "sono_ronco",
+      type: "yesno",
+      label: "Alguém já disse que você ronca alto ou para de respirar dormindo?",
+      required: true,
+      options: [
+        { value: "sim", label: "Sim" },
+        { value: "nao", label: "Não" },
+        { value: "nao_sei", label: "Não sei" },
+      ],
+      alert: { when: { q: "sono_ronco", op: "eq", value: "sim" }, code: "suspeita_apneia", label: "Ronco com pausas: considerar investigação de apneia" },
+    },
+    {
+      id: "sono_cafe_alcool",
+      type: "text",
+      label: "Quanto café e álcool você consome por dia ou por semana?",
+      maxLength: 300,
+      required: true,
+    },
+    {
+      id: "sono_humor",
+      type: "yesno",
+      label: "Nas últimas duas semanas, você se sentiu para baixo ou sem esperança na maior parte dos dias?",
+      required: true,
+      options: [
+        { value: "sim", label: "Sim" },
+        { value: "nao", label: "Não" },
+      ],
+      alert: { when: { q: "sono_humor", op: "eq", value: "sim" }, code: "humor_baixo", label: "Humor baixo nas últimas 2 semanas" },
+      support: { when: { q: "sono_humor", op: "eq", value: "sim" }, kind: "cvv" },
+    },
+  ],
+  suplementacao: [
+    {
+      id: "supl_objetivo",
+      type: "single",
+      label: "Qual é o seu principal objetivo?",
+      required: true,
+      options: [
+        { value: "energia", label: "Mais energia no dia a dia" },
+        { value: "treino", label: "Apoio à rotina de treino" },
+        { value: "imunidade", label: "Imunidade" },
+        { value: "outro", label: "Outro" },
+      ],
+    },
+    {
+      id: "supl_alimentacao",
+      type: "single",
+      label: "Como é a sua alimentação?",
+      required: true,
+      options: [
+        { value: "onivoro", label: "Como de tudo" },
+        { value: "vegetariano", label: "Vegetariana" },
+        { value: "vegano", label: "Vegana" },
+      ],
+    },
+    {
+      id: "supl_atividade",
+      type: "number",
+      label: "Quantos dias por semana você faz atividade física?",
+      unit: "dias",
+      min: 0,
+      max: 7,
+      required: true,
+    },
+    {
+      id: "supl_exames",
+      type: "files",
+      label: "Tem exames de sangue dos últimos 6 meses? Envie em PDF (opcional)",
+      maxFiles: 3,
+      required: false,
+    },
+  ],
+};
+
+const titles: Record<CareLineSlug, string> = {
+  cabelo: "Triagem — Cabelo",
+  pele: "Triagem — Pele",
+  "sono-e-energia": "Triagem — Sono e energia",
+  suplementacao: "Triagem — Suplementação",
+};
+
+export function triageV1(slug: CareLineSlug): TriageDefinition {
+  return {
+    care_line: slug,
+    title: titles[slug],
+    intro: "Estas respostas vão para o médico antes da consulta. Leva cerca de 5 minutos.",
+    questions: [...common, ...byLine[slug], ...closing],
+  };
+}
