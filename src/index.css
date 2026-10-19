@@ -13,7 +13,7 @@
   --primary-soft: 230 239 245;/* #E6EFF5 tom de Blue Marble */
   --primary-ink: 253 240 213; /* #FDF0D5 texto sobre o botão primário */
   --sky: 102 155 188;         /* #669BBC Blue Marble */
-  --deep: 0 48 73;            /* blocos azul-escuros (cartão de preço, chamada final) */
+  --deep: 0 48 73;            /* azul Cosmos para textos de destaque */
   --deep-ink: 253 240 213;
   --accent: 193 18 31;        /* #C1121F Crimson Blaze, só detalhes */
   --accent-deep: 120 0 0;     /* #780000 Gochujang red */
@@ -23,27 +23,7 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: 0 22 34;
-    --surface: 0 33 50;
-    --cream: 16 46 64;
-    --ink: 253 240 213;
-    --muted: 166 188 204;
-    --primary: 102 155 188;
-    --primary-soft: 10 54 80;
-    --primary-ink: 0 22 34;
-    --sky: 102 155 188;
-    --deep: 0 48 73;
-    --deep-ink: 253 240 213;
-    --accent: 232 72 82;
-    --accent-deep: 240 128 128;
-    --border: 20 58 82;
-    --danger: 242 150 150;
-    --success: 120 205 160;
-    color-scheme: dark;
-  }
-}
+/* Site sempre em fundo branco (sem tema escuro), por decisão de marca. */
 
 @layer base {
   html { -webkit-text-size-adjust: 100%; }

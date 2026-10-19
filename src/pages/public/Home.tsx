@@ -58,24 +58,24 @@ export default function Home() {
           </div>
 
           {/* Resumo da consulta */}
-          <div className="rounded-[24px] border border-sky/20 bg-deep p-8 text-deep-ink shadow-[0_30px_60px_-30px_rgb(var(--deep)/0.55)]">
+          <div className="rounded-[24px] border border-border border-t-4 border-t-accent bg-white p-8 text-ink shadow-[0_30px_60px_-34px_rgb(var(--deep)/0.35)]">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky">Sua consulta</p>
-            <dl className="mt-6 divide-y divide-deep-ink/15">
+            <dl className="mt-6 divide-y divide-border">
               {[
                 ["Formato", "Vídeo, com médico identificado"],
                 ["Duração", "Até 30 minutos"],
                 ["Pagamento", "Pix ou cartão em até 3x"],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-baseline justify-between gap-4 py-3">
-                  <dt className="text-sm opacity-70">{k}</dt>
+                  <dt className="text-sm text-muted">{k}</dt>
                   <dd className="text-right font-medium">{v}</dd>
                 </div>
               ))}
             </dl>
             {price && (
               <p className="mt-6 flex items-baseline gap-2">
-                <span className="font-display text-5xl font-medium tabular-nums">{formatBRL(price)}</span>
-                <span className="text-sm opacity-70">por consulta</span>
+                <span className="font-display text-5xl font-medium text-primary tabular-nums">{formatBRL(price)}</span>
+                <span className="text-sm text-muted">por consulta</span>
               </p>
             )}
           </div>
@@ -83,7 +83,7 @@ export default function Home() {
       </section>
 
       {/* Como funciona */}
-      <Section className="border-y border-border bg-primary-soft/50">
+      <Section className="border-y border-border bg-white">
         <div className="mb-12 max-w-xl">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="text-3xl font-medium sm:text-[2.6rem]">Quatro passos, tudo online.</h2>
@@ -168,9 +168,9 @@ export default function Home() {
 
       {/* CTA final */}
       <Section>
-        <div className="rounded-[24px] border border-sky/20 bg-deep px-6 py-14 text-center text-deep-ink sm:px-12">
-          <h2 className="text-3xl font-medium text-deep-ink sm:text-[2.6rem]">Sua saúde no prumo.</h2>
-          <p className="mx-auto mt-3 max-w-md opacity-80">Triagem de 5 minutos e consulta por vídeo.</p>
+        <div className="rounded-[24px] border border-border border-t-4 border-t-accent-deep bg-white px-6 py-14 text-center sm:px-12">
+          <h2 className="text-3xl font-medium text-ink sm:text-[2.6rem]">Sua saúde no prumo.</h2>
+          <p className="mx-auto mt-3 max-w-md text-muted">Triagem de 5 minutos e consulta por vídeo.</p>
           <ButtonLink to="/comecar" size="lg" className="mt-8 bg-accent text-white hover:bg-accent-deep">
             Começar agora
           </ButtonLink>
