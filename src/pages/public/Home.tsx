@@ -83,14 +83,14 @@ export default function Home() {
       </section>
 
       {/* Como funciona */}
-      <Section className="border-y border-border bg-surface">
+      <Section className="border-y border-border bg-primary-soft/50">
         <div className="mb-12 max-w-xl">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="text-3xl font-medium sm:text-[2.6rem]">Quatro passos, tudo online.</h2>
         </div>
         <ol className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
-            <li key={s.title} className="border-t-2 border-accent pt-5">
+            <li key={s.title} className="border-t-2 border-accent-deep pt-5">
               <p className="font-display text-4xl font-medium text-sky tabular-nums">{i + 1}</p>
               <p className="mt-3 text-lg font-semibold">{s.title}</p>
               <p className="mt-1 text-muted">{s.text}</p>
@@ -171,7 +171,7 @@ export default function Home() {
         <div className="rounded-[24px] border border-sky/20 bg-deep px-6 py-14 text-center text-deep-ink sm:px-12">
           <h2 className="text-3xl font-medium text-deep-ink sm:text-[2.6rem]">Sua saúde no prumo.</h2>
           <p className="mx-auto mt-3 max-w-md opacity-80">Triagem de 5 minutos e consulta por vídeo.</p>
-          <ButtonLink to="/comecar" size="lg" className="mt-8 bg-accent text-white hover:bg-accent/90">
+          <ButtonLink to="/comecar" size="lg" className="mt-8 bg-accent text-white hover:bg-accent-deep">
             Começar agora
           </ButtonLink>
         </div>

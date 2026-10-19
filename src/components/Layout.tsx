@@ -74,39 +74,39 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="mt-16 border-t border-border bg-surface">
+    <footer className="mt-16 bg-deep text-deep-ink">
       <Container className="grid gap-10 py-12 md:grid-cols-[1.3fr_1fr_1fr]">
         <div className="space-y-3">
-          <Logo />
-          <p className="max-w-sm text-sm text-muted">
+          <Logo className="[&_span]:text-deep-ink" />
+          <p className="max-w-sm text-sm text-deep-ink/70">
             Consulta online com médico identificado. Se houver indicação, a receita é sua e você escolhe a farmácia.
           </p>
-          <p className="text-sm text-muted">
-            Em caso de urgência, ligue <strong className="text-ink">192 (SAMU)</strong>.
+          <p className="text-sm text-deep-ink/70">
+            Em caso de urgência, ligue <strong className="text-deep-ink">192 (SAMU)</strong>.
           </p>
         </div>
         <div>
-          <p className="mb-3 text-sm font-semibold">Atendimento</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-sky">Atendimento</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/como-funciona" className="text-muted hover:text-primary">Como funciona</Link></li>
-            <li><Link to="/o-que-nao-atendemos" className="text-muted hover:text-primary">O que não atendemos</Link></li>
-            <li><Link to="/conteudo" className="text-muted hover:text-primary">Conteúdo</Link></li>
-            <li><Link to="/perguntas" className="text-muted hover:text-primary">Perguntas frequentes</Link></li>
+            <li><Link to="/como-funciona" className="text-deep-ink/70 no-underline hover:text-deep-ink">Como funciona</Link></li>
+            <li><Link to="/o-que-nao-atendemos" className="text-deep-ink/70 no-underline hover:text-deep-ink">O que não atendemos</Link></li>
+            <li><Link to="/conteudo" className="text-deep-ink/70 no-underline hover:text-deep-ink">Conteúdo</Link></li>
+            <li><Link to="/perguntas" className="text-deep-ink/70 no-underline hover:text-deep-ink">Perguntas frequentes</Link></li>
           </ul>
         </div>
         <div>
-          <p className="mb-3 text-sm font-semibold">Legal</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-sky">Legal</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/termos" className="text-muted hover:text-primary">Termos de uso</Link></li>
-            <li><Link to="/privacidade" className="text-muted hover:text-primary">Privacidade</Link></li>
-            <li><Link to="/tcle" className="text-muted hover:text-primary">Consentimento da telemedicina</Link></li>
-            <li><Link to="/cancelamento" className="text-muted hover:text-primary">Cancelamento e reembolso</Link></li>
-            <li><Link to="/transparencia" className="text-muted hover:text-primary">Transparência</Link></li>
+            <li><Link to="/termos" className="text-deep-ink/70 no-underline hover:text-deep-ink">Termos de uso</Link></li>
+            <li><Link to="/privacidade" className="text-deep-ink/70 no-underline hover:text-deep-ink">Privacidade</Link></li>
+            <li><Link to="/tcle" className="text-deep-ink/70 no-underline hover:text-deep-ink">Consentimento da telemedicina</Link></li>
+            <li><Link to="/cancelamento" className="text-deep-ink/70 no-underline hover:text-deep-ink">Cancelamento e reembolso</Link></li>
+            <li><Link to="/transparencia" className="text-deep-ink/70 no-underline hover:text-deep-ink">Transparência</Link></li>
           </ul>
         </div>
       </Container>
-      <div className="border-t border-border">
-        <Container className="space-y-1 py-6 text-xs leading-relaxed text-muted">
+      <div className="border-t border-deep-ink/15">
+        <Container className="space-y-1 py-6 text-xs leading-relaxed text-deep-ink/60">
           <p>
             {company.legalName} · CNPJ {company.cnpj} · {company.crmRegistration}
           </p>

@@ -4,7 +4,7 @@
 
 /* Tokens "Prumo premium" (azul Cosmos + vermelho Crimson + creme) em RGB, para opacidade no Tailwind. */
 :root {
-  --bg: 255 252 246;          /* #FFFCF6 creme claro */
+  --bg: 255 255 255;          /* #FFFFFF branco */
   --surface: 255 255 255;     /* #FFFFFF */
   --cream: 253 240 213;       /* #FDF0D5 creme (faixas de destaque) */
   --ink: 0 48 73;             /* #003049 Cosmos blue */
@@ -17,7 +17,7 @@
   --deep-ink: 253 240 213;
   --accent: 193 18 31;        /* #C1121F Crimson Blaze, só detalhes */
   --accent-deep: 120 0 0;     /* #780000 Gochujang red */
-  --border: 233 225 208;      /* #E9E1D0 */
+  --border: 226 232 237;      /* #E2E8ED cinza-azulado claro */
   --danger: 174 31 35;        /* #AE1F23 */
   --success: 31 110 77;       /* #1F6E4D */
   color-scheme: light;
