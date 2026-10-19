@@ -16,7 +16,7 @@ export function Logo({ className }: { className?: string }) {
         <line x1="16" y1="6" x2="16" y2="20" stroke="rgb(var(--primary-ink))" strokeWidth="2" strokeLinecap="round" />
         <path d="M12 20h8l-4 6z" fill="rgb(var(--accent))" />
       </svg>
-      <span className="font-display text-xl font-semibold text-ink">Prumo</span>
+      <span className="font-display text-[1.4rem] font-medium tracking-tight text-ink">Prumo</span>
     </Link>
   );
 }
@@ -25,8 +25,7 @@ const nav = [
   { to: "/como-funciona", label: "Como funciona" },
   { to: "/preco", label: "Preço" },
   { to: "/medicos", label: "Médicos" },
-  { to: "/transparencia", label: "Transparência" },
-  { to: "/perguntas", label: "Perguntas" },
+  { to: "/perguntas", label: "Dúvidas" },
 ];
 
 function Header() {
@@ -36,7 +35,7 @@ function Header() {
   useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/85 backdrop-blur">
       <Container className="flex h-16 items-center justify-between">
         <Logo />
         <nav className="hidden items-center gap-6 md:flex" aria-label="Principal">
@@ -124,7 +123,7 @@ function Footer() {
 function DemoBanner() {
   if (!isDemo) return null;
   return (
-    <div className="bg-accent/15 px-4 py-2 text-center text-sm text-ink">
+    <div className="bg-cream px-4 py-2 text-center text-sm text-ink">
       <strong>Modo demonstração:</strong> dados fictícios em memória, nada é salvo. Código de login: <strong>123456</strong>.
     </div>
   );

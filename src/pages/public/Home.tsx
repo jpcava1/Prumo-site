@@ -1,29 +1,28 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BadgeCheck, FileSignature, ShieldCheck, Store } from "lucide-react";
-import { ButtonLink, Card, Eyebrow, Section } from "@/components/ui";
+import { ArrowRight, BadgeCheck, ShieldCheck, Store } from "lucide-react";
+import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { careLineContent, launchSlugs } from "@/content/careLines";
 import { faq } from "@/content/faq";
-import { pharmacyPartner } from "@/config/site";
 import { formatBRL } from "@/lib/utils";
-import { lowestPrice, useCareLines, useProfessionals } from "@/hooks/useData";
+import { lowestPrice, useCareLines } from "@/hooks/useData";
 import { track } from "@/lib/analytics";
-import { DoctorCard } from "./Doctors";
 
 export const steps = [
-  { title: "Conte o que está acontecendo", text: "Uma triagem rápida que o médico lê antes de falar com você." },
-  { title: "Escolha o horário", text: "Vídeo de até 30 minutos, no dia e na hora que você preferir." },
-  { title: "Converse com o médico", text: "Ele avalia e decide com você o melhor caminho, que pode ou não incluir remédio." },
-  { title: "Receba seus documentos", text: "Receita, orientações ou pedido de exame ficam na sua conta. A farmácia, você escolhe." },
+  { title: "Responda a triagem", text: "Cerca de 5 minutos. O médico lê antes da consulta." },
+  { title: "Escolha o horário", text: "Vídeo de até 30 minutos, quando for melhor para você." },
+  { title: "Converse com o médico", text: "Ele avalia e decide com você o melhor caminho." },
+  { title: "Receba seus documentos", text: "Ficam na sua conta. A farmácia, você escolhe." },
 ];
 
+/** Etapas em linha vertical (usada em "Como funciona"). */
 export function StepsLine() {
   return (
     <ol className="prumo-line space-y-7">
       {steps.map((s, i) => (
         <li key={s.title} className="relative">
           <span className="prumo-dot" style={{ top: "0.35rem" }} aria-hidden />
-          <p className="text-sm font-medium text-primary">Passo {i + 1}</p>
-          <p className="font-display text-xl font-semibold">{s.title}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Passo {i + 1}</p>
+          <p className="mt-1 font-display text-xl font-medium">{s.title}</p>
           <p className="mt-1 text-muted">{s.text}</p>
         </li>
       ))}
@@ -33,154 +32,146 @@ export function StepsLine() {
 
 export default function Home() {
   const { data: lines } = useCareLines();
-  const { data: pros } = useProfessionals();
   const price = lowestPrice(lines);
 
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-site gap-10 px-4 pb-16 pt-12 sm:px-6 md:grid-cols-[1.25fr_1fr] md:pb-24 md:pt-20">
+      <section>
+        <div className="mx-auto grid max-w-site items-center gap-12 px-4 pb-16 pt-14 sm:px-6 md:grid-cols-[1.3fr_1fr] md:pb-24 md:pt-24">
           <div>
-            <Eyebrow>Consulta online com médico</Eyebrow>
-            <h1 className="text-[2.35rem] font-semibold leading-[1.08] sm:text-6xl">
-              Cabelo, pele, sono e energia: fale com um médico sem sair de casa.
+            <Eyebrow>Consulta médica online</Eyebrow>
+            <h1 className="text-[2.6rem] font-medium leading-[1.05] sm:text-[4rem]">
+              Um médico de verdade, <span className="italic text-accent">sem sair de casa.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted">
-              Consulta por vídeo de até 30 minutos, com médico de nome e CRM na tela. Se houver indicação, a receita é sua e você escolhe a farmácia.
+            <p className="mt-6 max-w-lg text-lg text-muted">
+              Cabelo, pele, sono e energia. Consulta por vídeo de até 30 minutos, com médico de nome e CRM na tela.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <ButtonLink to="/comecar" size="lg" onClick={() => track("comecar_click")}>
                 Começar <ArrowRight className="h-5 w-5" aria-hidden />
               </ButtonLink>
               <ButtonLink to="/como-funciona" size="lg" variant="ghost">
-                Ver como funciona
+                Como funciona
               </ButtonLink>
             </div>
-            {price && <p className="mt-4 text-sm text-muted">Consulta a partir de {formatBRL(price)} · Pix ou cartão</p>}
           </div>
 
-          <Card className="self-start md:mt-6">
-            <p className="text-sm font-medium text-muted">Como funciona</p>
-            <div className="mt-5">
-              <StepsLine />
-            </div>
-          </Card>
+          {/* Resumo da consulta */}
+          <div className="rounded-[24px] border border-sky/20 bg-deep p-8 text-deep-ink shadow-[0_30px_60px_-30px_rgb(var(--deep)/0.55)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky">Sua consulta</p>
+            <dl className="mt-6 divide-y divide-deep-ink/15">
+              {[
+                ["Formato", "Vídeo, com médico identificado"],
+                ["Duração", "Até 30 minutos"],
+                ["Pagamento", "Pix ou cartão em até 3x"],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-baseline justify-between gap-4 py-3">
+                  <dt className="text-sm opacity-70">{k}</dt>
+                  <dd className="text-right font-medium">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            {price && (
+              <p className="mt-6 flex items-baseline gap-2">
+                <span className="font-display text-5xl font-medium tabular-nums">{formatBRL(price)}</span>
+                <span className="text-sm opacity-70">por consulta</span>
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
+      {/* Como funciona */}
+      <Section className="border-y border-border bg-surface">
+        <div className="mb-12 max-w-xl">
+          <Eyebrow>Como funciona</Eyebrow>
+          <h2 className="text-3xl font-medium sm:text-[2.6rem]">Quatro passos, tudo online.</h2>
+        </div>
+        <ol className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((s, i) => (
+            <li key={s.title} className="border-t-2 border-accent pt-5">
+              <p className="font-display text-4xl font-medium text-sky tabular-nums">{i + 1}</p>
+              <p className="mt-3 text-lg font-semibold">{s.title}</p>
+              <p className="mt-1 text-muted">{s.text}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
       {/* Linhas de cuidado */}
-      <Section className="bg-surface">
-        <div className="mb-10 max-w-2xl">
-          <Eyebrow>Por onde começar</Eyebrow>
-          <h2 className="text-3xl font-semibold sm:text-4xl">Escolha o motivo da consulta</h2>
+      <Section>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-xl">
+            <Eyebrow>Por onde começar</Eyebrow>
+            <h2 className="text-3xl font-medium sm:text-[2.6rem]">Escolha o motivo da consulta</h2>
+          </div>
+          <Link to="/o-que-nao-atendemos" className="text-sm text-muted">
+            O que não atendemos
+          </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {launchSlugs.map((slug) => {
             const c = careLineContent[slug];
             return (
-              <Link key={slug} to={`/${slug}`} className="group rounded-card border border-border bg-bg p-6 no-underline transition-colors hover:border-primary">
-                <p className="font-display text-2xl font-semibold text-ink">{c.name}</p>
-                <p className="mt-2 text-muted">{c.short}</p>
-                <span className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Saiba mais <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                </span>
+              <Link
+                key={slug}
+                to={`/${slug}`}
+                className="group flex flex-col justify-between gap-8 rounded-card border border-border bg-surface p-6 no-underline transition-all hover:-translate-y-0.5 hover:border-primary"
+              >
+                <div>
+                  <p className="font-display text-2xl font-medium text-ink">{c.name}</p>
+                  <p className="mt-2 text-muted">{c.short}</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-accent transition-transform group-hover:translate-x-1" aria-hidden />
               </Link>
             );
           })}
         </div>
-        <p className="mt-6 text-sm text-muted">
-          Não encontrou o seu caso? Veja <Link to="/o-que-nao-atendemos">o que não atendemos</Link>.
-        </p>
       </Section>
 
       {/* Confiança */}
-      <Section>
-        <div className="grid gap-10 md:grid-cols-[1fr_1.2fr]">
-          <div>
-            <Eyebrow>Por que confiar</Eyebrow>
-            <h2 className="text-3xl font-semibold sm:text-4xl">Regras cumpridas à vista.</h2>
-            <p className="mt-4 text-muted">
-              Médicos com registro ativo, receita com validade nacional e liberdade total para escolher onde manipular. Está tudo na página de{" "}
-              <Link to="/transparencia">transparência</Link>.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { icon: BadgeCheck, title: "Médicos com nome, foto e CRM", text: "Você vê quem vai atender antes de agendar." },
-              { icon: FileSignature, title: "Receita digital válida", text: "Assinatura ICP-Brasil, aceita em todo o país." },
-              { icon: Store, title: "A farmácia é escolha sua", text: `A ${pharmacyPartner.name}, de Arapongas (PR), é uma opção integrada. Usar é opcional.` },
-              { icon: ShieldCheck, title: "Seus dados ficam no Brasil", text: "Só o seu médico vê suas respostas de saúde." },
-            ].map(({ icon: Icon, title, text }) => (
-              <Card key={title}>
-                <Icon className="h-6 w-6 text-primary" aria-hidden />
-                <p className="mt-3 font-semibold">{title}</p>
-                <p className="mt-1 text-sm text-muted">{text}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* Médicos */}
-      {pros && pros.length > 0 && (
-        <Section className="bg-surface">
-          <div className="mb-8 flex items-end justify-between gap-4">
-            <div>
-              <Eyebrow>Quem atende</Eyebrow>
-              <h2 className="text-3xl font-semibold sm:text-4xl">Nossos médicos</h2>
+      <Section className="bg-cream">
+        <div className="grid gap-10 md:grid-cols-3">
+          {[
+            { icon: BadgeCheck, title: "Médico com CRM", text: "Você vê quem vai atender antes de agendar." },
+            { icon: Store, title: "A farmácia é sua escolha", text: "A receita sai no seu nome e vale no Brasil todo." },
+            { icon: ShieldCheck, title: "Dados protegidos", text: "Só o seu médico vê suas respostas de saúde." },
+          ].map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex gap-4">
+              <Icon className="h-7 w-7 shrink-0 text-accent" strokeWidth={1.5} aria-hidden />
+              <div>
+                <p className="font-semibold">{title}</p>
+                <p className="mt-1 text-muted">{text}</p>
+              </div>
             </div>
-            <Link to="/medicos" className="hidden text-sm font-medium sm:block">
-              Ver todos
-            </Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {pros.slice(0, 3).map((p) => (
-              <DoctorCard key={p.id} p={p} />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Para quem é */}
-      <Section>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="bg-primary-soft/40">
-            <h3 className="text-2xl font-semibold">Para quem é</h3>
-            <p className="mt-3 text-ink/90">
-              Adultos que querem avaliar queda de cabelo, pele, sono, energia ou suplementação com um médico, sem fila e sem sair de casa.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-2xl font-semibold">Para quem não é</h3>
-            <p className="mt-3 text-ink/90">
-              Urgências, menores de 18 anos, emagrecimento com remédio, saúde mental, hormônios para estética ou desempenho e remédios controlados.{" "}
-              <Link to="/o-que-nao-atendemos">Entenda por quê</Link>.
-            </p>
-          </Card>
+          ))}
         </div>
+        <p className="mt-10 text-sm text-muted">
+          Regras, registros e responsáveis na página de <Link to="/transparencia">transparência</Link>.
+        </p>
       </Section>
 
-      {/* FAQ curto */}
-      <Section className="bg-surface">
+      {/* Dúvidas */}
+      <Section>
         <div className="grid gap-10 md:grid-cols-[1fr_1.6fr]">
           <div>
             <Eyebrow>Dúvidas</Eyebrow>
-            <h2 className="text-3xl font-semibold sm:text-4xl">Perguntas frequentes</h2>
+            <h2 className="text-3xl font-medium sm:text-[2.6rem]">Perguntas frequentes</h2>
             <Link to="/perguntas" className="mt-4 inline-block text-sm font-medium">
-              Ver todas as perguntas
+              Ver todas
             </Link>
           </div>
-          <FaqList items={faq.slice(0, 5)} />
+          <FaqList items={faq.slice(0, 3)} />
         </div>
       </Section>
 
       {/* CTA final */}
       <Section>
-        <div className="rounded-[20px] bg-primary px-6 py-12 text-center text-primary-ink sm:px-12">
-          <h2 className="text-3xl font-semibold text-primary-ink sm:text-4xl">Sua saúde no prumo começa com uma conversa.</h2>
-          <p className="mx-auto mt-3 max-w-xl opacity-90">Triagem de 5 minutos, consulta por vídeo e seus documentos na sua conta.</p>
-          <ButtonLink to="/comecar" size="lg" variant="secondary" className="mt-8">
+        <div className="rounded-[24px] border border-sky/20 bg-deep px-6 py-14 text-center text-deep-ink sm:px-12">
+          <h2 className="text-3xl font-medium text-deep-ink sm:text-[2.6rem]">Sua saúde no prumo.</h2>
+          <p className="mx-auto mt-3 max-w-md opacity-80">Triagem de 5 minutos e consulta por vídeo.</p>
+          <ButtonLink to="/comecar" size="lg" className="mt-8 bg-accent text-white hover:bg-accent/90">
             Começar agora
           </ButtonLink>
         </div>
@@ -191,12 +182,12 @@ export default function Home() {
 
 export function FaqList({ items }: { items: { q: string; a: string }[] }) {
   return (
-    <div className="divide-y divide-border rounded-card border border-border bg-bg">
+    <div className="divide-y divide-border border-y border-border">
       {items.map((f) => (
-        <details key={f.q} className="group px-5 py-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
+        <details key={f.q} className="group py-5">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium">
             {f.q}
-            <span className="text-primary transition-transform group-open:rotate-45" aria-hidden>
+            <span className="text-2xl font-light text-accent transition-transform group-open:rotate-45" aria-hidden>
               +
             </span>
           </summary>

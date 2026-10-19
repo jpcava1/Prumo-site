@@ -2,35 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tokens "Prumo calmo" em RGB (para funcionar com opacidade no Tailwind). */
+/* Tokens "Prumo premium" (azul Cosmos + vermelho Crimson + creme) em RGB, para opacidade no Tailwind. */
 :root {
-  --bg: 247 245 239;          /* #F7F5EF */
+  --bg: 255 252 246;          /* #FFFCF6 creme claro */
   --surface: 255 255 255;     /* #FFFFFF */
-  --ink: 31 42 36;            /* #1F2A24 */
-  --muted: 94 107 100;        /* #5E6B64 */
-  --primary: 47 93 80;        /* #2F5D50 */
-  --primary-soft: 220 232 226;/* #DCE8E2 */
-  --primary-ink: 255 255 255; /* texto sobre o botão primário */
-  --accent: 200 135 58;       /* #C8873A — só detalhes, nunca texto pequeno */
-  --border: 227 224 214;      /* #E3E0D6 */
-  --danger: 179 38 30;        /* #B3261E */
-  --success: 46 125 79;       /* #2E7D4F */
+  --cream: 253 240 213;       /* #FDF0D5 creme (faixas de destaque) */
+  --ink: 0 48 73;             /* #003049 Cosmos blue */
+  --muted: 74 99 117;         /* #4A6375 */
+  --primary: 0 48 73;         /* #003049 Cosmos blue */
+  --primary-soft: 230 239 245;/* #E6EFF5 tom de Blue Marble */
+  --primary-ink: 253 240 213; /* #FDF0D5 texto sobre o botão primário */
+  --sky: 102 155 188;         /* #669BBC Blue Marble */
+  --deep: 0 48 73;            /* blocos azul-escuros (cartão de preço, chamada final) */
+  --deep-ink: 253 240 213;
+  --accent: 193 18 31;        /* #C1121F Crimson Blaze, só detalhes */
+  --accent-deep: 120 0 0;     /* #780000 Gochujang red */
+  --border: 233 225 208;      /* #E9E1D0 */
+  --danger: 174 31 35;        /* #AE1F23 */
+  --success: 31 110 77;       /* #1F6E4D */
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: 18 23 20;
-    --surface: 26 33 29;
-    --ink: 238 241 236;
-    --muted: 163 174 168;
-    --primary: 127 184 164;
-    --primary-soft: 36 54 47;
-    --primary-ink: 15 26 22;
-    --accent: 217 163 95;
-    --border: 42 51 46;
-    --danger: 242 184 181;
-    --success: 143 209 168;
+    --bg: 0 22 34;
+    --surface: 0 33 50;
+    --cream: 16 46 64;
+    --ink: 253 240 213;
+    --muted: 166 188 204;
+    --primary: 102 155 188;
+    --primary-soft: 10 54 80;
+    --primary-ink: 0 22 34;
+    --sky: 102 155 188;
+    --deep: 0 48 73;
+    --deep-ink: 253 240 213;
+    --accent: 232 72 82;
+    --accent-deep: 240 128 128;
+    --border: 20 58 82;
+    --danger: 242 150 150;
+    --success: 120 205 160;
     color-scheme: dark;
   }
 }
@@ -41,7 +51,7 @@
     @apply bg-bg text-ink font-sans antialiased;
     font-feature-settings: "ss01", "cv11";
   }
-  h1, h2, h3 { @apply font-display text-ink; letter-spacing: -0.01em; }
+  h1, h2, h3 { @apply font-display text-ink; letter-spacing: -0.015em; text-wrap: balance; }
   a { @apply underline-offset-4; }
   :focus-visible { outline: 2px solid rgb(var(--primary)); outline-offset: 2px; border-radius: 6px; }
 }
@@ -56,6 +66,6 @@
   .prumo-dot {
     /* posicionado em relação ao item da lista, que fica 1.75rem à direita da linha */
     position: absolute; left: -1.65rem; width: 0.75rem; height: 0.75rem; border-radius: 999px;
-    background: rgb(var(--surface)); border: 2px solid rgb(var(--primary));
+    background: rgb(var(--surface)); border: 2px solid rgb(var(--accent));
   }
 }

@@ -61,7 +61,7 @@ export function Section({ className, children, id }: { className?: string; child
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="mb-3 text-sm font-medium uppercase tracking-[0.12em] text-primary">{children}</p>;
+  return <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-accent">{children}</p>;
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
@@ -148,7 +148,7 @@ export function ChoiceOption({
 export function Notice({ tone = "info", title, children }: { tone?: "info" | "warning" | "danger" | "success"; title?: string; children: ReactNode }) {
   const styles = {
     info: "border-primary/30 bg-primary-soft/50",
-    warning: "border-accent/40 bg-accent/10",
+    warning: "border-accent/30 bg-cream",
     danger: "border-danger/40 bg-danger/5",
     success: "border-success/40 bg-success/10",
   }[tone];
@@ -168,7 +168,7 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   const t = {
     neutral: "bg-border/60 text-ink",
     primary: "bg-primary-soft text-primary",
-    warning: "bg-accent/15 text-ink",
+    warning: "bg-cream text-ink",
     danger: "bg-danger/10 text-danger",
     success: "bg-success/10 text-success",
   }[tone];

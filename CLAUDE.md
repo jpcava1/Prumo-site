@@ -20,7 +20,7 @@ Se um teste de `tests/compliance.test.ts`, `tests/pharmacy-choice.test.tsx` ou `
 
 ## Stack
 
-- React 18 + Vite + TypeScript + Tailwind (tokens em `src/index.css`, rota visual "Prumo calmo").
+- React 18 + Vite + TypeScript + Tailwind (tokens em `src/index.css`, identidade "Prumo premium": azul Cosmos #003049, vermelho Crimson #C1121F, creme #FDF0D5).
 - Supabase (região São Paulo): Postgres + Auth (código por e-mail) + Storage privado + Edge Functions (Deno).
 - Camada de dados única: `src/lib/api/` com duas implementações da mesma interface (`types.ts`):
   - `supabaseApi.ts` (produção) e `demoApi.ts` (modo demonstração em memória, sem chaves).
