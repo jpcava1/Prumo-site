@@ -5,7 +5,9 @@ import type {
   AuthUser,
   CareLine,
   ClinicalDocument,
+  DoctorActive,
   Payment,
+  Prescription,
   Professional,
   Profile,
   ReportSummary,
@@ -28,6 +30,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   consulta_nao_encontrada: "Consulta não encontrada.",
   consulta_nao_cancelavel: "Esta consulta não pode mais ser cancelada.",
   sem_permissao: "Você não tem permissão para isso.",
+  consulta_nao_encerravel: "Só é possível encerrar uma consulta confirmada.",
+  receita_vazia: "Adicione pelo menos um componente à receita.",
+  receita_incompleta: "Preencha forma, quantidade, modo de uso e o nome e a dose de cada componente.",
+  receita_ja_emitida: "Esta receita já foi emitida.",
 };
 
 function friendly(err: { message?: string } | null): Error {
@@ -210,6 +216,9 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
       if (error) throw new Error("Não foi possível abrir o documento agora.");
       return data.signedUrl;
     },
+    async getPrescriptionForDocument(documentId) {
+      return must(await sb.from("prescriptions").select("*").eq("document_id", documentId).maybeSingle()) as Prescription | null;
+    },
     async recordPharmacyChoice(documentId, choice) {
       const uid = await uidOrThrow();
       // Registro best-effort: falhar aqui nunca impede o paciente de seguir.
@@ -288,6 +297,42 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
       must(
         await sb.from("outcomes").upsert({ appointment_id: appointmentId, professional_id: appt.professional_id, outcome, return_days: returnDays }),
       );
+    },
+    async doctorListActives() {
+      return must(await sb.from("doctor_actives").select("id, professional_id, name, default_dose, notes").order("name")) as DoctorActive[];
+    },
+    async doctorSaveActive(input) {
+      const row = { name: input.name.trim(), default_dose: input.default_dose?.trim() || null, notes: input.notes?.trim() || null };
+      if (input.id) {
+        return must(await sb.from("doctor_actives").update(row).eq("id", input.id).select().single()) as DoctorActive;
+      }
+      const uid = await uidOrThrow();
+      const prof = must(await sb.from("professionals").select("id").eq("user_id", uid).single()) as { id: string };
+      return must(await sb.from("doctor_actives").insert({ ...row, professional_id: prof.id }).select().single()) as DoctorActive;
+    },
+    async doctorDeleteActive(id) {
+      must(await sb.from("doctor_actives").delete().eq("id", id));
+    },
+    async doctorGetPrescriptionDraft(appointmentId) {
+      return must(await sb.from("prescriptions").select("*").eq("appointment_id", appointmentId).maybeSingle()) as Prescription | null;
+    },
+    async doctorSavePrescriptionDraft(appointmentId, input) {
+      const appt = must(await sb.from("appointments").select("patient_id, professional_id").eq("id", appointmentId).single()) as {
+        patient_id: string;
+        professional_id: string;
+      };
+      const row = { appointment_id: appointmentId, ...appt, form: input.form, quantity: input.quantity, directions: input.directions, items: input.items };
+      return must(await sb.from("prescriptions").upsert(row, { onConflict: "appointment_id" }).select().single()) as Prescription;
+    },
+    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription }) {
+      return must(
+        await sb.rpc("finish_consultation", {
+          p_appointment_id: appointmentId,
+          p_outcome: outcome,
+          p_return_days: returnDays,
+          p_prescription: prescription,
+        }),
+      ) as { document_id: string | null };
     },
     async directorListTriageVersions(careLine) {
       return must(

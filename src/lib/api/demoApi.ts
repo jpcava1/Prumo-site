@@ -5,13 +5,16 @@ import type {
   CareLine,
   ClinicalDocument,
   ConsentType,
+  DoctorActive,
   OutcomeKind,
   Payment,
+  Prescription,
   Professional,
   Profile,
   Role,
   TriageVersion,
 } from "./types";
+import { prescriptionText, validatePrescription } from "@/lib/prescription";
 import type { Answers } from "@/lib/triage/schema";
 import type { TriageAlert } from "@/lib/triage/engine";
 import { ageOn, isAdult } from "@/lib/triage/engine";
@@ -84,6 +87,28 @@ export function createDemoApi(): Api {
   const documents: ClinicalDocument[] = [];
   const outcomes = new Map<string, { outcome: OutcomeKind; return_days: number | null }>();
   const choices: { document_id: string; choice: "farmashop" | "baixou_pdf" }[] = [];
+  const prescriptions: Prescription[] = [];
+  // Tabela de ativos da médica de demonstração (nomes genéricos; o médico cadastra os reais).
+  const actives: DoctorActive[] = [1, 2, 3, 4].map((n) => ({
+    id: `at${n}`,
+    professional_id: "p1",
+    name: `Componente de exemplo ${n}`,
+    default_dose: `${n * 50} mg`,
+    notes: n === 1 ? "Exemplo de observação do médico" : null,
+  }));
+  /** Profissional ligado ao usuário logado (na demonstração, o médico assume a p1). */
+  const myProfessional = () => {
+    const u = need();
+    const p = professionals.find((x) => x.user_id === u.id);
+    if (!p && role() === "medical_director") return professionals[0];
+    if (!p) throw new Error("Você não tem permissão para isso.");
+    return p;
+  };
+  const myAppointment = (appointmentId: string) => {
+    const a = appointments.find((x) => x.id === appointmentId);
+    if (!a || a.professional_id !== myProfessional().id) throw new Error("Consulta não encontrada.");
+    return a;
+  };
 
   const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v), ms));
   const need = () => {
@@ -280,8 +305,14 @@ export function createDemoApi(): Api {
       return delay(documents.find((d) => d.id === id) ?? null, 20);
     },
     async getDocumentUrl(doc) {
-      const text = `${doc.title}\n\nDOCUMENTO DE DEMONSTRAÇÃO — sem validade e sem conteúdo clínico.\nEmitido em ${new Date(doc.issued_at).toLocaleString("pt-BR")}.`;
+      const rx = prescriptions.find((p) => p.document_id === doc.id);
+      const body = rx ? `\n\n${prescriptionText(rx)}` : "";
+      const text = `${doc.title}\n\nDOCUMENTO DE DEMONSTRAÇÃO — sem validade.\nEmitido em ${new Date(doc.issued_at).toLocaleString("pt-BR")}.${body}`;
       return delay("data:text/plain;charset=utf-8," + encodeURIComponent(text), 20);
+    },
+    async getPrescriptionForDocument(documentId) {
+      const u = need();
+      return delay(prescriptions.find((p) => p.document_id === documentId && p.patient_id === u.id) ?? null, 20);
     },
     async recordPharmacyChoice(documentId, choice) {
       choices.push({ document_id: documentId, choice });
@@ -383,6 +414,71 @@ export function createDemoApi(): Api {
       outcomes.set(appointmentId, { outcome, return_days: returnDays });
       return delay(undefined);
     },
+    async doctorListActives() {
+      requireRole("doctor", "medical_director");
+      const me = myProfessional();
+      return delay(actives.filter((a) => a.professional_id === me.id).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")), 30);
+    },
+    async doctorSaveActive(input) {
+      requireRole("doctor", "medical_director");
+      const me = myProfessional();
+      const name = input.name.trim();
+      if (!name) throw new Error("Informe o nome do ativo.");
+      const existing = input.id ? actives.find((a) => a.id === input.id && a.professional_id === me.id) : undefined;
+      if (existing) {
+        Object.assign(existing, { name, default_dose: input.default_dose?.trim() || null, notes: input.notes?.trim() || null });
+        return delay(existing, 30);
+      }
+      const row: DoctorActive = { id: uid(), professional_id: me.id, name, default_dose: input.default_dose?.trim() || null, notes: input.notes?.trim() || null };
+      actives.push(row);
+      return delay(row, 30);
+    },
+    async doctorDeleteActive(id) {
+      requireRole("doctor", "medical_director");
+      const me = myProfessional();
+      const i = actives.findIndex((a) => a.id === id && a.professional_id === me.id);
+      if (i >= 0) actives.splice(i, 1);
+      return delay(undefined, 30);
+    },
+    async doctorGetPrescriptionDraft(appointmentId) {
+      requireRole("doctor", "medical_director");
+      const a = myAppointment(appointmentId);
+      return delay(prescriptions.find((p) => p.appointment_id === a.id) ?? null, 30);
+    },
+    async doctorSavePrescriptionDraft(appointmentId, input) {
+      requireRole("doctor", "medical_director");
+      const a = myAppointment(appointmentId);
+      let rx = prescriptions.find((p) => p.appointment_id === a.id);
+      if (rx?.document_id) throw new Error("Esta receita já foi emitida.");
+      const data = { form: input.form, quantity: input.quantity, directions: input.directions, items: input.items.map((i) => ({ ...i })) };
+      if (rx) Object.assign(rx, data);
+      else {
+        rx = { id: uid(), appointment_id: a.id, patient_id: a.patient_id, professional_id: a.professional_id, document_id: null, issued_at: null, ...data };
+        prescriptions.push(rx);
+      }
+      return delay(rx, 30);
+    },
+    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription }) {
+      requireRole("doctor", "medical_director");
+      const a = myAppointment(appointmentId);
+      if (!["confirmado", "realizado"].includes(a.status)) throw new Error("Só é possível encerrar uma consulta confirmada.");
+      if (outcome === "receita_emitida" && !prescription) throw new Error("Monte a receita antes de emiti-la.");
+      const existing = prescriptions.find((p) => p.appointment_id === a.id);
+      if (existing?.document_id) throw new Error("Esta receita já foi emitida.");
+      const valid = prescription ? validatePrescription(prescription) : null;
+      a.status = "realizado";
+      outcomes.set(a.id, { outcome, return_days: returnDays });
+      const issued_at = new Date().toISOString();
+      const base = { appointment_id: a.id, patient_id: a.patient_id, pdf_path: "demo", issued_at };
+      documents.push({ ...base, id: uid(), kind: "orientacao", title: "Orientações da consulta" });
+      if (!valid) return delay({ document_id: null });
+      const docId = uid();
+      documents.push({ ...base, id: docId, kind: "receita", title: "Receita de suplemento manipulado" });
+      const data = { ...valid, document_id: docId, issued_at };
+      if (existing) Object.assign(existing, data);
+      else prescriptions.push({ id: uid(), appointment_id: a.id, patient_id: a.patient_id, professional_id: a.professional_id, ...data });
+      return delay({ document_id: docId });
+    },
     async directorListTriageVersions(careLine) {
       requireRole("medical_director");
       return delay(versions.filter((v) => v.care_line === careLine).sort((a, b) => b.version - a.version));
@@ -448,7 +544,26 @@ export function createDemoApi(): Api {
       a.status = "realizado";
       const base = { appointment_id: a.id, patient_id: a.patient_id, pdf_path: "demo", issued_at: new Date().toISOString() };
       documents.push({ ...base, id: uid(), kind: "orientacao", title: "Orientações da consulta" });
-      if (withPrescription) documents.push({ ...base, id: uid(), kind: "receita", title: "Receita digital" });
+      if (withPrescription) {
+        const docId = uid();
+        documents.push({ ...base, id: docId, kind: "receita", title: "Receita de suplemento manipulado" });
+        prescriptions.push({
+          id: uid(),
+          appointment_id: a.id,
+          patient_id: a.patient_id,
+          professional_id: a.professional_id,
+          document_id: docId,
+          issued_at: base.issued_at,
+          form: "Cápsulas",
+          quantity: "60 cápsulas",
+          directions: "Tomar 1 cápsula ao dia, após o café da manhã.",
+          items: [
+            { name: "Componente de exemplo 1", dose: "50 mg" },
+            { name: "Componente de exemplo 2", dose: "100 mg" },
+            { name: "Componente de exemplo 3", dose: "150 mg" },
+          ],
+        });
+      }
       return delay(undefined);
     },
     async demoSetRole(r) {

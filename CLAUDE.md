@@ -6,17 +6,18 @@ Briefing completo: `docs/BRIEFING.md`.
 
 ## Restrições que nenhum código pode violar
 
-1. **Nada de remédio no site.** Nunca exibir, sugerir ou armazenar catálogo de remédio, ativo, fórmula, dose ou preço de fórmula. Nada de carrinho. A triagem não tem IA, pontuação nem resultado; só alertas para o médico. (Caso Voy, Anvisa jun–ago/2026; RDC 67/2007 item 5.14.)
-2. **Livre escolha da farmácia.** A tela da receita (`src/components/PharmacyChoice.tsx`) tem duas opções com o MESMO componente e estilo: "Pedir na Farmashop" (só abre o site dela em nova aba) e "Baixar e levar a outra farmácia". A Prumo nunca envia receita ou dado do paciente para farmácia. (CEM arts. 68 e 69; RDC 67/2007, captação de receitas.)
+1. **Nada de remédio nas páginas públicas.** Nunca exibir, sugerir ou anunciar remédio, ativo, fórmula, dose ou preço de fórmula ao público. Nada de carrinho e nada de preço de fórmula em lugar nenhum. A triagem não tem IA, pontuação nem resultado; só alertas para o médico. (Caso Voy, Anvisa jun–ago/2026; RDC 67/2007 item 5.14.)
+   - **Exceção decidida pelo João (2026-10-20), pendente de parecer jurídico:** o médico tem uma **tabela de ativos privada** (`doctor_actives`, só ele lê) e monta a receita durante a consulta (`prescriptions`, `src/pages/panel/DoctorPrescription.tsx`). O paciente vê os componentes da **própria** receita emitida, na área logada, sem preço. Nenhum nome real de ativo no código (os testes de conformidade continuam valendo); os nomes ficam só no banco, cadastrados pelo médico.
+2. **Livre escolha da farmácia.** A tela da receita (`src/components/PharmacyChoice.tsx`) tem duas opções com o MESMO componente e estilo: "Pedir na Farmashop" (só abre o WhatsApp dela, +55 43 98825-1010, em nova aba, com mensagem pronta sem dado de saúde) e "Salvar receita e levar a outra farmácia". A Prumo nunca envia receita ou dado do paciente para farmácia. (CEM arts. 68 e 69; RDC 67/2007, captação de receitas.)
 3. **Checkout só da consulta**, na conta da Prumo. Sem split, sem cupom de farmácia, sem "consulta grátis comprando a fórmula".
 4. **Médico pago por consulta realizada × valor fixo.** Nenhuma tabela, coluna, view ou relatório liga pagamento de profissional a receita, documento ou farmácia.
 5. **Dado de saúde** nunca em URL, título, log, analytics, pixel, e-mail de marketing ou template de WhatsApp. Motivo da consulta passa por estado da navegação, não por query string.
-6. **RLS em todas as tabelas.** Staff e admin não leem `triage_responses` nem `clinical_documents`. Médico lê triagem só pela função `get_triage_for_appointment` (que audita).
+6. **RLS em todas as tabelas.** Staff e admin não leem `triage_responses`, `clinical_documents`, `prescriptions` nem `doctor_actives`. Médico lê triagem só pela função `get_triage_for_appointment` (que audita).
 7. **Quem prescreve:** só profissional com CRM (medicamento) ou CRN (suplemento). Nunca farmacêutico da Farmashop, biomédico ou estudante.
 8. **Copy:** sem promessa de resultado, sem antes/depois de tratamento, sem foto de cápsula/pote/frasco. Preço da consulta pode aparecer (Res. CFM 2.336/2023). Especialidade só com RQE.
 9. **Menores de 18 anos e sinais de urgência** bloqueiam o fluxo (com SAMU 192).
 
-Se um teste de `tests/compliance.test.ts`, `tests/pharmacy-choice.test.tsx` ou `tests/db/rls.test.ts` falhar, **conserte o código, não o teste**. Mudar uma dessas regras exige decisão do João e parecer jurídico.
+Se um teste de `tests/compliance.test.ts`, `tests/pharmacy-choice.test.tsx`, `tests/db/rls.test.ts` ou `tests/db/prescriptions.test.ts` falhar, **conserte o código, não o teste**. Mudar uma dessas regras exige decisão do João e parecer jurídico.
 
 ## Stack
 

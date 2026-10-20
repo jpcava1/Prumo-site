@@ -21,7 +21,7 @@ import StepConfirmado from "@/pages/flow/StepConfirmado";
 import AccountShell from "@/pages/account/AccountShell";
 import { DocumentPage, Help, MyAppointments, MyData, MyDocuments, MyPayments } from "@/pages/account/AccountPages";
 import PanelShell from "@/pages/panel/PanelShell";
-import { PanelAccess, PanelAgenda, PanelDoctor, PanelPrices, PanelProfessionals, PanelReports, PanelTriage } from "@/pages/panel/PanelPages";
+import { PanelAccess, PanelActives, PanelAgenda, PanelDoctor, PanelPrices, PanelProfessionals, PanelReports, PanelTriage } from "@/pages/panel/PanelPages";
 
 export default function App() {
   return (
@@ -85,6 +85,7 @@ export default function App() {
           >
             <Route index element={<RequireRole roles={["staff", "admin", "medical_director"]}><PanelAgenda /></RequireRole>} />
             <Route path="medico" element={<RequireRole roles={["doctor", "medical_director"]}><PanelDoctor /></RequireRole>} />
+            <Route path="ativos" element={<RequireRole roles={["doctor", "medical_director"]}><PanelActives /></RequireRole>} />
             <Route path="profissionais" element={<RequireRole roles={["admin", "staff"]}><PanelProfessionals /></RequireRole>} />
             <Route path="precos" element={<RequireRole roles={["admin"]}><PanelPrices /></RequireRole>} />
             <Route path="triagem" element={<RequireRole roles={["medical_director"]}><PanelTriage /></RequireRole>} />

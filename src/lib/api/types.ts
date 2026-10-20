@@ -98,6 +98,41 @@ export interface ClinicalDocument {
   issued_at: string;
 }
 
+/** Componente de uma receita de suplemento manipulado (ativo + dose por unidade). */
+export interface PrescriptionItem {
+  name: string;
+  dose: string;
+}
+
+/**
+ * Receita montada pelo médico durante a consulta.
+ * Só o médico autor (e o diretor técnico) vê o rascunho; o paciente vê depois de emitida.
+ * Sem preço, sem farmácia: a receita é do paciente.
+ */
+export interface Prescription {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  professional_id: string;
+  document_id: string | null;
+  form: string;
+  quantity: string;
+  directions: string;
+  items: PrescriptionItem[];
+  issued_at: string | null;
+}
+
+export type PrescriptionInput = Pick<Prescription, "form" | "quantity" | "directions" | "items">;
+
+/** Tabela de ativos do médico: lista de consulta rápida, privada de cada profissional. */
+export interface DoctorActive {
+  id: string;
+  professional_id: string;
+  name: string;
+  default_dose: string | null;
+  notes: string | null;
+}
+
 export type OutcomeKind = "orientacao" | "receita_emitida" | "pedido_exame" | "encaminhamento" | "fora_escopo";
 
 export interface TriageVersion {
@@ -163,6 +198,8 @@ export interface Api {
   listMyDocuments(): Promise<ClinicalDocument[]>;
   getDocument(id: string): Promise<ClinicalDocument | null>;
   getDocumentUrl(doc: ClinicalDocument): Promise<string | null>;
+  /** Receita emitida ligada a um documento do próprio paciente (null se não houver). */
+  getPrescriptionForDocument(documentId: string): Promise<Prescription | null>;
   recordPharmacyChoice(documentId: string, choice: "farmashop" | "baixou_pdf"): Promise<void>;
   exportMyData(): Promise<unknown>;
   requestDeletion(): Promise<void>;
@@ -179,6 +216,16 @@ export interface Api {
   doctorAgenda(): Promise<Appointment[]>;
   doctorGetTriage(appointmentId: string): Promise<TriageForDoctor>;
   doctorSetOutcome(appointmentId: string, outcome: OutcomeKind, returnDays: number | null): Promise<void>;
+  doctorListActives(): Promise<DoctorActive[]>;
+  doctorSaveActive(input: { id?: string; name: string; default_dose: string | null; notes: string | null }): Promise<DoctorActive>;
+  doctorDeleteActive(id: string): Promise<void>;
+  doctorGetPrescriptionDraft(appointmentId: string): Promise<Prescription | null>;
+  doctorSavePrescriptionDraft(appointmentId: string, input: PrescriptionInput): Promise<Prescription>;
+  /** Encerra a consulta: marca como realizada, grava o desfecho e, se houver receita, emite o documento para o paciente. */
+  doctorFinishConsultation(
+    appointmentId: string,
+    input: { outcome: OutcomeKind; returnDays: number | null; prescription: PrescriptionInput | null },
+  ): Promise<{ document_id: string | null }>;
   directorListTriageVersions(careLine: string): Promise<TriageVersion[]>;
   directorPublishTriage(careLine: string, definition: TriageDefinition): Promise<TriageVersion>;
   reportSummary(fromISO: string, toISO: string): Promise<ReportSummary>;

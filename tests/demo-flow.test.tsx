@@ -67,6 +67,38 @@ describe("jornada do paciente (demonstração)", () => {
     await expect(api.reserveSlot({ ...slot, care_line: "pele", kind: "primeira", triage_response_id: id })).rejects.toThrow(/18 anos/);
   });
 
+  it("médico monta a receita na consulta e o paciente a recebe ao final, sem preço", async () => {
+    const api = createDemoApi();
+    await api.verifyCode("rx@teste.com", DEMO_CODE);
+    await api.saveProfile({ full_name: "Paulo Receita", cpf: "529.982.247-25", birth_date: "1985-03-02", phone: "43999990000" });
+    await api.recordConsents(["termos", "privacidade", "dados_saude"]);
+    const v = await api.getTriageVersion("suplementacao");
+    const t = await api.saveTriageDraft({ care_line: "suplementacao", version_id: v.id, answers: {} });
+    await api.submitTriage(t, {}, []);
+    const [slot] = (await api.listSlots("suplementacao", new Date().toISOString(), 14)).filter((s) => s.professional_id === "p1");
+    const appt = await api.reserveSlot({ ...slot, care_line: "suplementacao", kind: "primeira", triage_response_id: t });
+    await api.demoConfirmPayment!(appt.id);
+
+    // paciente não acessa a tabela de ativos nem o rascunho
+    await expect(api.doctorListActives()).rejects.toThrow(/permissão/);
+
+    await api.demoSetRole!("doctor");
+    const actives = await api.doctorListActives();
+    expect(actives.length).toBeGreaterThan(0);
+    const rx = { form: "Cápsulas", quantity: "60 cápsulas", directions: "1 ao dia", items: [{ name: actives[0].name, dose: actives[0].default_dose ?? "1 mg" }] };
+    await api.doctorSavePrescriptionDraft(appt.id, rx);
+    await expect(api.doctorFinishConsultation(appt.id, { outcome: "receita_emitida", returnDays: null, prescription: { ...rx, items: [] } })).rejects.toThrow(/componente/);
+    const { document_id } = await api.doctorFinishConsultation(appt.id, { outcome: "receita_emitida", returnDays: 60, prescription: rx });
+    expect(document_id).toBeTruthy();
+    await expect(api.doctorSavePrescriptionDraft(appt.id, rx)).rejects.toThrow(/já foi emitida/);
+
+    await api.demoSetRole!("patient");
+    expect((await api.getAppointment(appt.id))?.status).toBe("realizado");
+    const mine = await api.getPrescriptionForDocument(document_id!);
+    expect(mine?.items).toEqual(rx.items);
+    expect(JSON.stringify(mine)).not.toMatch(/price|preco|valor/i);
+  });
+
   it("paciente não acessa o painel", async () => {
     const api = createDemoApi();
     await api.verifyCode("p@teste.com", DEMO_CODE);

@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList } from "lucide-react";
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea } from "@/components/ui";
 import { useAsync } from "@/hooks/useData";
-import { api, type Appointment, type CareLine, type OutcomeKind, type Professional, type Role, type TriageForDoctor } from "@/lib/api";
+import { api, type Appointment, type CareLine, type Professional, type Role, type TriageForDoctor } from "@/lib/api";
 import { maskCPF } from "@/lib/cpf";
 import { breakEvenConsults, contributionCents, defaultFirstConsult, defaultReturnConsult } from "@/lib/pricing";
 import { validateDefinition } from "@/lib/triage/schema";
 import { visibleQuestions } from "@/lib/triage/engine";
 import { formatBRL, formatDateTime, formatTime } from "@/lib/utils";
 import { careLineContent, type CareLineSlug } from "@/content/careLines";
+import { PrescriptionBuilder } from "./DoctorPrescription";
+
+export { PanelActives } from "./DoctorPrescription";
 
 const lineName = (s: string) => careLineContent[s as CareLineSlug]?.name ?? s;
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -81,15 +84,7 @@ export function PanelAgenda() {
   );
 }
 
-/* Médico: agenda, triagem (somente leitura) e desfecho ------------------------------ */
-const OUTCOMES: { value: OutcomeKind; label: string }[] = [
-  { value: "orientacao", label: "Orientação apenas" },
-  { value: "receita_emitida", label: "Receita emitida" },
-  { value: "pedido_exame", label: "Pedido de exame" },
-  { value: "encaminhamento", label: "Encaminhamento presencial" },
-  { value: "fora_escopo", label: "Caso fora do escopo" },
-];
-
+/* Médico: agenda, triagem (somente leitura), receita e encerramento ------------------- */
 function TriageView({ t }: { t: TriageForDoctor }) {
   const qs = visibleQuestions(t.definition, t.answers);
   const fmt = (v: unknown, opts?: { value: string; label: string }[]) => {
@@ -132,34 +127,17 @@ function TriageView({ t }: { t: TriageForDoctor }) {
 }
 
 export function PanelDoctor() {
-  const { data, loading, error } = useAsync(() => api.doctorAgenda(), []);
+  const { data, loading, error, reload } = useAsync(() => api.doctorAgenda(), []);
   const [open, setOpen] = useState<Appointment | null>(null);
   const [triage, setTriage] = useState<TriageForDoctor | null>(null);
-  const [outcome, setOutcome] = useState<OutcomeKind>("orientacao");
-  const [returnDays, setReturnDays] = useState<string>("");
-  const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   async function openAppt(a: Appointment) {
     setOpen(a);
     setTriage(null);
-    setMsg(null);
     setErr(null);
     try {
       setTriage(await api.doctorGetTriage(a.id));
-    } catch (e) {
-      setErr((e as Error).message);
-    }
-  }
-
-  async function saveOutcome() {
-    if (!open) return;
-    setErr(null);
-    const days = returnDays ? Number(returnDays) : null;
-    if (days !== null && (days < 7 || days > 365)) return setErr("Retorno entre 7 e 365 dias.");
-    try {
-      await api.doctorSetOutcome(open.id, outcome, days);
-      setMsg("Desfecho registrado. Ele serve para qualidade e não altera o seu repasse.");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -189,7 +167,7 @@ export function PanelDoctor() {
         <div>
           {!open && (
             <Card className="flex items-center gap-3 text-muted">
-              <ClipboardList className="h-5 w-5" /> Escolha uma consulta para ver a triagem.
+              <ClipboardList className="h-5 w-5" /> Escolha uma consulta para ver a triagem e montar a receita.
             </Card>
           )}
           {open && (
@@ -207,24 +185,15 @@ export function PanelDoctor() {
               {err && <Notice tone="danger">{err}</Notice>}
               {!triage && !err && <Spinner label="Abrindo triagem" />}
               {triage && <TriageView t={triage} />}
-              <div className="space-y-3 border-t border-border pt-5">
-                <p className="font-semibold">Desfecho (qualidade)</p>
-                <p className="text-sm text-muted">
-                  Receita, pedido de exame e encaminhamento são emitidos na plataforma de atendimento, com assinatura ICP-Brasil. Prescreva ativo e dose,
-                  sem marca e sem indicar farmácia.
-                </p>
-                <select className="h-11 w-full rounded-xl border border-border bg-surface px-3" value={outcome} onChange={(e) => setOutcome(e.target.value as OutcomeKind)}>
-                  {OUTCOMES.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <Field label="Retorno sugerido em (dias, opcional)" htmlFor="ret">
-                  <Input id="ret" type="number" min={7} max={365} value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="max-w-[160px]" />
-                </Field>
-                <Button onClick={saveOutcome}>Salvar desfecho</Button>
-                {msg && <p className="text-sm text-success">{msg}</p>}
+              <div className="border-t border-border pt-5">
+                <PrescriptionBuilder
+                  key={open.id}
+                  appointment={open}
+                  onFinished={() => {
+                    setOpen({ ...open, status: "realizado" });
+                    reload();
+                  }}
+                />
               </div>
             </Card>
           )}

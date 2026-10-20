@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 export const PANEL_ITEMS: { to: string; label: string; roles: Role[] }[] = [
   { to: "/painel", label: "Agenda", roles: ["staff", "admin", "medical_director"] },
   { to: "/painel/medico", label: "Minha agenda (médico)", roles: ["doctor", "medical_director"] },
+  { to: "/painel/ativos", label: "Tabela de ativos", roles: ["doctor", "medical_director"] },
   { to: "/painel/profissionais", label: "Profissionais e horários", roles: ["admin", "staff"] },
   { to: "/painel/precos", label: "Linhas e preços", roles: ["admin"] },
   { to: "/painel/triagem", label: "Triagem (versões)", roles: ["medical_director"] },
