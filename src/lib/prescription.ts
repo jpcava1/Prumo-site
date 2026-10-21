@@ -1,4 +1,5 @@
-import type { Prescription, PrescriptionInput } from "@/lib/api/types";
+import type { PlanItem, Prescription, PrescriptionInput } from "@/lib/api/types";
+import { PLAN_SECTIONS } from "@/content/planSuggestions";
 
 export const MAX_PRESCRIPTION_ITEMS = 30;
 
@@ -23,4 +24,17 @@ export function validatePrescription(input: PrescriptionInput): PrescriptionInpu
 export function prescriptionText(p: Pick<Prescription, "form" | "quantity" | "directions" | "items">): string {
   const lines = p.items.map((i, n) => `${n + 1}. ${i.name} — ${i.dose}`);
   return [`Forma: ${p.form}`, `Quantidade: ${p.quantity}`, "", "Componentes:", ...lines, "", `Modo de uso: ${p.directions}`].join("\n");
+}
+
+export const MAX_PLAN_ITEMS = 60;
+
+/** Limpa o "Seu Plano": tira linhas vazias e confere seções e tamanho. */
+export function validatePlan(items: PlanItem[]): PlanItem[] {
+  const clean = items
+    .map((i) => ({ section: i.section, title: i.title.trim(), detail: i.detail?.trim() || null }))
+    .filter((i) => i.title);
+  if (clean.length > MAX_PLAN_ITEMS) throw new Error(`O plano aceita até ${MAX_PLAN_ITEMS} itens.`);
+  if (clean.some((i) => !(i.section in PLAN_SECTIONS))) throw new Error("Seção do plano inválida.");
+  if (clean.some((i) => i.title.length > 140 || (i.detail?.length ?? 0) > 400)) throw new Error("Algum item do plano está longo demais.");
+  return clean;
 }

@@ -101,7 +101,13 @@ export function PharmacyChoice({ document }: { document: ClinicalDocument }) {
     api.recordPharmacyChoice(document.id, "baixou_pdf").catch(() => undefined);
     try {
       const url = await api.getDocumentUrl(document);
-      if (!url) throw new Error("O PDF ainda não está disponível.");
+      if (!url) {
+        // Sem o PDF assinado no servidor: monta o PDF da receita no aparelho do paciente.
+        const ctx = await api.getDocumentContext(document.id);
+        const { downloadDocumentPdf } = await import("@/lib/pdf");
+        if (!ctx || !downloadDocumentPdf(ctx)) throw new Error("O PDF ainda não está disponível.");
+        return;
+      }
       const a = window.document.createElement("a");
       a.href = url;
       a.download = `${document.title.replace(/\s+/g, "-").toLowerCase()}${api.mode === "demo" ? ".txt" : ".pdf"}`;

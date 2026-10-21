@@ -52,7 +52,7 @@ describe("jornada do paciente (demonstração)", () => {
 
     await api.demoCompleteConsultation!(appt.id, true);
     const docs = await api.listMyDocuments();
-    expect(docs.map((d) => d.kind).sort()).toEqual(["orientacao", "receita"]);
+    expect(docs.map((d) => d.kind).sort()).toEqual(["orientacao", "plano", "receita"]);
   });
 
   it("bloqueia menor de 18 anos na reserva", async () => {
@@ -97,6 +97,58 @@ describe("jornada do paciente (demonstração)", () => {
     const mine = await api.getPrescriptionForDocument(document_id!);
     expect(mine?.items).toEqual(rx.items);
     expect(JSON.stringify(mine)).not.toMatch(/price|preco|valor/i);
+  });
+
+  it("Seu Plano: biblioteca do profissional, emissão separada da receita, PDF e e-mail", async () => {
+    const api = createDemoApi();
+    await api.signUpWithPassword("pac3@teste.com", "senha-forte-1");
+    await api.saveProfile({ full_name: "Paulo Plano", cpf: "529.982.247-25", birth_date: "1988-02-02", phone: "43999990000" });
+    await api.recordConsents(["termos", "privacidade", "dados_saude"]);
+    const v = await api.getTriageVersion("suplementacao");
+    const t = await api.saveTriageDraft({ care_line: "suplementacao", version_id: v.id, answers: {} });
+    await api.submitTriage(t, {}, []);
+    const [slot] = (await api.listSlots("suplementacao", new Date().toISOString(), 14)).filter((s) => s.professional_id === "p1");
+    const appt = await api.reserveSlot({ ...slot, care_line: "suplementacao", kind: "primeira", triage_response_id: t });
+    await api.demoConfirmPayment!(appt.id);
+
+    // paciente não mexe na biblioteca de ninguém
+    await expect(api.doctorListTemplates()).rejects.toThrow(/permissão/);
+
+    await api.demoSetRole!("doctor");
+    const saved = await api.doctorSaveTemplate({ section: "cafe", title: "Iogurte com fruta", detail: "1 pote" });
+    expect((await api.doctorListTemplates()).map((x) => x.id)).toEqual([saved.id]);
+
+    const plan = [
+      { section: "objetivo" as const, title: "Mais energia" },
+      { section: "cafe" as const, title: saved.title, detail: saved.detail },
+      { section: "rotina" as const, title: "Dormir 8 horas" },
+      { section: "exame" as const, title: "Hemograma completo" },
+      { section: "meta" as const, title: "   " }, // linha vazia é descartada
+    ];
+    await api.doctorSavePlanDraft(appt.id, plan);
+    expect((await api.doctorGetPlanDraft(appt.id))?.items).toHaveLength(5);
+    const rx = { form: "Cápsulas", quantity: "60", directions: "1 ao dia", items: [{ name: "Componente A", dose: "10 mg" }] };
+    const res = await api.doctorFinishConsultation(appt.id, { outcome: "receita_emitida", returnDays: null, prescription: rx, plan });
+    expect(res.document_id).toBeTruthy();
+    expect(res.plan_document_id).toBeTruthy();
+    expect(res.plan_document_id).not.toBe(res.document_id);
+    await expect(api.doctorSavePlanDraft(appt.id, plan)).rejects.toThrow(/já foi enviado/);
+    expect(await api.doctorSendDocuments(appt.id)).toEqual({ sent_to: "pac3@teste.com" });
+
+    await api.demoSetRole!("patient");
+    const docs = await api.listMyDocuments();
+    expect(docs.map((d) => d.kind).sort()).toEqual(["orientacao", "plano", "receita"]);
+    const planCtx = await api.getDocumentContext(res.plan_document_id!);
+    expect(planCtx?.plan?.items.map((i) => i.title)).toEqual(["Mais energia", "Iogurte com fruta", "Dormir 8 horas", "Hemograma completo"]);
+    expect(planCtx?.prescription).toBeNull();
+    expect(JSON.stringify(planCtx?.plan)).not.toContain("Componente A");
+    const rxCtx = await api.getDocumentContext(res.document_id!);
+    expect(rxCtx?.prescription?.items[0].name).toBe("Componente A");
+    expect(rxCtx?.patient.full_name).toBe("Paulo Plano");
+
+    const { buildDocumentPdf } = await import("@/lib/pdf");
+    expect(buildDocumentPdf(planCtx!)?.filename).toMatch(/^seu-plano-prumo-paulo-/);
+    expect(buildDocumentPdf(rxCtx!)?.filename).toMatch(/^receita-prumo-paulo-/);
   });
 
   it("login com e-mail e senha", async () => {

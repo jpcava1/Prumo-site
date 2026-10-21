@@ -4,9 +4,12 @@ import type {
   Appointment,
   AuthUser,
   CareLine,
+  CarePlan,
   ClinicalDocument,
+  DocumentContext,
   DoctorActive,
   Payment,
+  PlanTemplate,
   Prescription,
   Professional,
   ProfessionalSignup,
@@ -35,6 +38,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   receita_vazia: "Adicione pelo menos um componente à receita.",
   receita_incompleta: "Preencha forma, quantidade, modo de uso e o nome e a dose de cada componente.",
   receita_ja_emitida: "Esta receita já foi emitida.",
+  plano_ja_emitido: "Este plano já foi enviado ao paciente.",
+  plano_invalido: "Confira os itens do plano: cada um precisa de um texto.",
   profissional_ja_cadastrado: "Você já tem cadastro de profissional.",
   cadastro_profissional_incompleto: "Preencha nome, registro no conselho, UF e formação.",
   especialidade_sem_rqe: "Especialidade só pode ser informada com RQE.",
@@ -245,6 +250,27 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
     async getPrescriptionForDocument(documentId) {
       return must(await sb.from("prescriptions").select("*").eq("document_id", documentId).maybeSingle()) as Prescription | null;
     },
+    async getDocumentContext(documentId) {
+      const document = (await api.getDocument(documentId)) as ClinicalDocument | null;
+      if (!document) return null;
+      const [patient, appt, prescription, plan] = await Promise.all([
+        sb.from("profiles").select("full_name, cpf, birth_date").eq("id", document.patient_id).maybeSingle(),
+        sb.from("appointments").select("professional_id").eq("id", document.appointment_id).maybeSingle(),
+        document.kind === "receita" ? sb.from("prescriptions").select("*").eq("document_id", documentId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        document.kind === "plano" ? sb.from("care_plans").select("*").eq("document_id", documentId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      ]);
+      const profId = (appt.data as { professional_id: string } | null)?.professional_id;
+      const prof = profId
+        ? ((await sb.from("professionals").select(PROFESSIONAL_PUBLIC_COLUMNS).eq("id", profId).maybeSingle()).data as Professional | null)
+        : null;
+      return {
+        document,
+        patient: (patient.data as DocumentContext["patient"] | null) ?? { full_name: null, cpf: null, birth_date: null },
+        professional: prof,
+        prescription: prescription.data as Prescription | null,
+        plan: plan.data as CarePlan | null,
+      };
+    },
     async recordPharmacyChoice(documentId, choice) {
       const uid = await uidOrThrow();
       // Registro best-effort: falhar aqui nunca impede o paciente de seguir.
@@ -401,15 +427,46 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
       const row = { appointment_id: appointmentId, ...appt, form: input.form, quantity: input.quantity, directions: input.directions, items: input.items };
       return must(await sb.from("prescriptions").upsert(row, { onConflict: "appointment_id" }).select().single()) as Prescription;
     },
-    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription }) {
+    async doctorListTemplates() {
+      return must(await sb.from("plan_templates").select("id, professional_id, section, title, detail").order("section").order("title")) as PlanTemplate[];
+    },
+    async doctorSaveTemplate(input) {
+      const row = { section: input.section, title: input.title.trim(), detail: input.detail?.trim() || null };
+      if (input.id) return must(await sb.from("plan_templates").update(row).eq("id", input.id).select().single()) as PlanTemplate;
+      const prof = await api.getMyProfessional();
+      if (!prof) throw new Error(ERROR_MESSAGES.sem_permissao);
+      return must(await sb.from("plan_templates").insert({ ...row, professional_id: prof.id }).select().single()) as PlanTemplate;
+    },
+    async doctorDeleteTemplate(id) {
+      must(await sb.from("plan_templates").delete().eq("id", id));
+    },
+    async doctorGetPlanDraft(appointmentId) {
+      return must(await sb.from("care_plans").select("*").eq("appointment_id", appointmentId).maybeSingle()) as CarePlan | null;
+    },
+    async doctorSavePlanDraft(appointmentId, items) {
+      const appt = must(await sb.from("appointments").select("patient_id, professional_id").eq("id", appointmentId).single()) as {
+        patient_id: string;
+        professional_id: string;
+      };
+      return must(
+        await sb.from("care_plans").upsert({ appointment_id: appointmentId, ...appt, items }, { onConflict: "appointment_id" }).select().single(),
+      ) as CarePlan;
+    },
+    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription, plan }) {
       return must(
         await sb.rpc("finish_consultation", {
           p_appointment_id: appointmentId,
           p_outcome: outcome,
           p_return_days: returnDays,
           p_prescription: prescription,
+          p_plan: plan && plan.length ? plan : null,
         }),
-      ) as { document_id: string | null };
+      ) as { document_id: string | null; plan_document_id: string | null };
+    },
+    async doctorSendDocuments(appointmentId) {
+      const { data, error } = await sb.functions.invoke("send-documents", { body: { appointment_id: appointmentId } });
+      if (error) throw new Error("Não foi possível enviar o e-mail agora. O paciente já pode baixar os PDFs na conta dele.");
+      return data as { sent_to: string | null };
     },
     async directorListTriageVersions(careLine) {
       return must(

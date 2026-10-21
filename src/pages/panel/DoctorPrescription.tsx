@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { Button, Card, Field, Input, Notice, Spinner, Textarea } from "@/components/ui";
 import { useAsync } from "@/hooks/useData";
-import { api, type Appointment, type DoctorActive, type OutcomeKind, type PrescriptionInput, type PrescriptionItem } from "@/lib/api";
-import { MAX_PRESCRIPTION_ITEMS, validatePrescription } from "@/lib/prescription";
+import { api, type Appointment, type DoctorActive, type OutcomeKind, type PlanItem, type PrescriptionInput, type PrescriptionItem } from "@/lib/api";
+import { MAX_PRESCRIPTION_ITEMS, validatePlan, validatePrescription } from "@/lib/prescription";
+import { useAuth } from "@/context/AuthContext";
+import type { PlanSection } from "@/content/planSuggestions";
+import { PlanEditor, PlanTabsBar, TemplatesManager, planTabs, type ProKind } from "./CarePlanEditor";
 
 /*
  * Receita montada durante a consulta.
@@ -56,7 +59,12 @@ function ActivePicker({ actives, onPick }: { actives: DoctorActive[]; onPick: (a
 }
 
 export function PrescriptionBuilder({ appointment, onFinished }: { appointment: Appointment; onFinished: () => void }) {
+  const { professional } = useAuth();
+  const kind: ProKind = professional?.kind ?? "medico";
   const { data: actives } = useAsync(() => api.doctorListActives(), []);
+  const { data: templates } = useAsync(() => api.doctorListTemplates(), []);
+  const [view, setView] = useState<"receita" | "plano">("receita");
+  const [plan, setPlan] = useState<PlanItem[]>([]);
   const [rx, setRx] = useState<PrescriptionInput>(emptyRx);
   const [loaded, setLoaded] = useState(false);
   const [outcome, setOutcome] = useState<OutcomeKind>("receita_emitida");
@@ -71,12 +79,12 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
     setLoaded(false);
     setMsg(null);
     setErr(null);
-    api
-      .doctorGetPrescriptionDraft(appointment.id)
-      .then((d) => {
+    Promise.all([api.doctorGetPrescriptionDraft(appointment.id), api.doctorGetPlanDraft(appointment.id)])
+      .then(([d, p]) => {
         if (!alive) return;
         setRx(d ? { form: d.form || emptyRx.form, quantity: d.quantity, directions: d.directions, items: d.items } : emptyRx);
-        if (d?.document_id) setMsg("Receita emitida. O paciente já pode vê-la na conta dele.");
+        setPlan(p?.items ?? []);
+        if (d?.document_id || p?.document_id) setMsg("Documentos emitidos. O paciente já pode vê-los e baixá-los na conta dele.");
       })
       .catch((e) => alive && setErr((e as Error).message))
       .finally(() => alive && setLoaded(true));
@@ -95,8 +103,8 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
     setErr(null);
     setMsg(null);
     try {
-      await api.doctorSavePrescriptionDraft(appointment.id, rx);
-      setMsg("Rascunho salvo.");
+      await Promise.all([api.doctorSavePrescriptionDraft(appointment.id, rx), api.doctorSavePlanDraft(appointment.id, plan)]);
+      setMsg("Rascunho salvo (receita e Seu Plano).");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -108,15 +116,27 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
     const days = returnDays ? Number(returnDays) : null;
     if (days !== null && (days < 7 || days > 365)) return setErr("Retorno entre 7 e 365 dias.");
     let prescription: PrescriptionInput | null = null;
+    let planItems: PlanItem[] = [];
     try {
       if (outcome === "receita_emitida") prescription = validatePrescription(rx);
+      planItems = validatePlan(plan);
     } catch (e) {
       return setErr((e as Error).message);
     }
     setBusy(true);
     try {
-      await api.doctorFinishConsultation(appointment.id, { outcome, returnDays: days, prescription });
-      setMsg(prescription ? "Consulta encerrada. A receita já aparece na conta do paciente." : "Consulta encerrada.");
+      const res = await api.doctorFinishConsultation(appointment.id, { outcome, returnDays: days, prescription, plan: planItems });
+      const issued = [res.plan_document_id && "Seu Plano", res.document_id && "receita"].filter(Boolean).join(" e ");
+      let text = issued ? `Consulta encerrada. ${issued[0].toUpperCase()}${issued.slice(1)} já ${res.plan_document_id && res.document_id ? "estão" : "está"} na conta do paciente.` : "Consulta encerrada.";
+      if (issued) {
+        try {
+          const sent = await api.doctorSendDocuments(appointment.id);
+          if (sent.sent_to) text += ` PDFs enviados para ${sent.sent_to}.`;
+        } catch (e) {
+          text += ` ${(e as Error).message}`;
+        }
+      }
+      setMsg(text);
       onFinished();
     } catch (e) {
       setErr((e as Error).message);
@@ -129,74 +149,97 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="font-semibold">Receita do paciente</p>
-        <p className="text-sm text-muted">Adicione os componentes durante a consulta. Prescreva ativo e dose, sem marca e sem indicar farmácia.</p>
-      </div>
+      <PlanTabsBar
+        tabs={[
+          { key: "receita", label: kind === "nutricionista" ? "Fórmula do suplemento" : "Receita", count: rx.items.length },
+          { key: "plano", label: kind === "nutricionista" ? "Seu Plano: dieta e rotina" : "Seu Plano: rotina e cuidados", count: plan.length },
+        ]}
+        active={view}
+        onChange={(k) => setView(k as "receita" | "plano")}
+      />
 
-      {!done && actives && <ActivePicker actives={actives} onPick={(a) => addItem({ name: a.name, dose: a.default_dose ?? "" })} />}
-
-      <div className="overflow-x-auto rounded-card border border-border">
-        <table className="w-full min-w-[520px] text-left text-[15px]">
-          <thead className="bg-primary-soft/50 text-sm text-muted">
-            <tr>
-              <th className="w-10 px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">Componente (ativo)</th>
-              <th className="w-40 px-3 py-2 font-medium">Dose por unidade</th>
-              <th className="w-12 px-3 py-2" aria-label="Remover" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {rx.items.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-muted">
-                  Nenhum componente ainda.
-                </td>
-              </tr>
-            )}
-            {rx.items.map((it, i) => (
-              <tr key={i}>
-                <td className="px-3 py-2 tabular-nums text-muted">{i + 1}</td>
-                <td className="px-3 py-2">
-                  <Input aria-label={`Componente ${i + 1}`} value={it.name} disabled={done} onChange={(e) => setItem(i, { name: e.target.value })} className="h-10" />
-                </td>
-                <td className="px-3 py-2">
-                  <Input aria-label={`Dose ${i + 1}`} value={it.dose} disabled={done} placeholder="ex.: 100 mg" onChange={(e) => setItem(i, { dose: e.target.value })} className="h-10" />
-                </td>
-                <td className="px-3 py-2">
-                  {!done && (
-                    <button type="button" onClick={() => removeItem(i)} className="rounded-lg p-2 text-muted hover:text-danger" aria-label={`Remover componente ${i + 1}`}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {!done && (
-        <Button variant="secondary" size="sm" onClick={() => addItem({ name: "", dose: "" })}>
-          <Plus className="h-4 w-4" /> Adicionar componente
-        </Button>
+      {view === "plano" && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            O paciente recebe o Seu Plano em PDF, separado da receita: objetivos, metas, {kind === "nutricionista" ? "cardápio, rotina" : "rotina, cuidados"} e exames pedidos.
+            Clique nos itens da sua biblioteca ou nas sugestões para adicionar.
+          </p>
+          <PlanEditor kind={kind} items={plan} onChange={setPlan} templates={templates ?? []} disabled={done} />
+        </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Forma" htmlFor="rx-form">
-          <Input id="rx-form" value={rx.form} disabled={done} placeholder="ex.: cápsulas, sachês" onChange={(e) => setRx({ ...rx, form: e.target.value })} />
-        </Field>
-        <Field label="Quantidade total" htmlFor="rx-qty">
-          <Input id="rx-qty" value={rx.quantity} disabled={done} placeholder="ex.: 60 cápsulas" onChange={(e) => setRx({ ...rx, quantity: e.target.value })} />
-        </Field>
-      </div>
-      <Field label="Modo de uso" htmlFor="rx-dir">
-        <Textarea id="rx-dir" value={rx.directions} disabled={done} placeholder="ex.: tomar 1 cápsula ao dia, após o café da manhã" onChange={(e) => setRx({ ...rx, directions: e.target.value })} />
-      </Field>
+      {view === "receita" && (
+        <>
+          <div>
+            <p className="font-semibold">Receita do paciente</p>
+            <p className="text-sm text-muted">Adicione os componentes durante a consulta. Prescreva ativo e dose, sem marca e sem indicar farmácia.</p>
+          </div>
+
+          {!done && actives && <ActivePicker actives={actives} onPick={(a) => addItem({ name: a.name, dose: a.default_dose ?? "" })} />}
+
+          <div className="overflow-x-auto rounded-card border border-border">
+            <table className="w-full min-w-[520px] text-left text-[15px]">
+              <thead className="bg-primary-soft/50 text-sm text-muted">
+                <tr>
+                  <th className="w-10 px-3 py-2 font-medium">#</th>
+                  <th className="px-3 py-2 font-medium">Componente (ativo)</th>
+                  <th className="w-40 px-3 py-2 font-medium">Dose por unidade</th>
+                  <th className="w-12 px-3 py-2" aria-label="Remover" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rx.items.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-6 text-center text-muted">
+                      Nenhum componente ainda.
+                    </td>
+                  </tr>
+                )}
+                {rx.items.map((it, i) => (
+                  <tr key={i}>
+                    <td className="px-3 py-2 tabular-nums text-muted">{i + 1}</td>
+                    <td className="px-3 py-2">
+                      <Input aria-label={`Componente ${i + 1}`} value={it.name} disabled={done} onChange={(e) => setItem(i, { name: e.target.value })} className="h-10" />
+                    </td>
+                    <td className="px-3 py-2">
+                      <Input aria-label={`Dose ${i + 1}`} value={it.dose} disabled={done} placeholder="ex.: 100 mg" onChange={(e) => setItem(i, { dose: e.target.value })} className="h-10" />
+                    </td>
+                    <td className="px-3 py-2">
+                      {!done && (
+                        <button type="button" onClick={() => removeItem(i)} className="rounded-lg p-2 text-muted hover:text-danger" aria-label={`Remover componente ${i + 1}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!done && (
+            <Button variant="secondary" size="sm" onClick={() => addItem({ name: "", dose: "" })}>
+              <Plus className="h-4 w-4" /> Adicionar componente
+            </Button>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Forma" htmlFor="rx-form">
+              <Input id="rx-form" value={rx.form} disabled={done} placeholder="ex.: cápsulas, sachês" onChange={(e) => setRx({ ...rx, form: e.target.value })} />
+            </Field>
+            <Field label="Quantidade total" htmlFor="rx-qty">
+              <Input id="rx-qty" value={rx.quantity} disabled={done} placeholder="ex.: 60 cápsulas" onChange={(e) => setRx({ ...rx, quantity: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Modo de uso" htmlFor="rx-dir">
+            <Textarea id="rx-dir" value={rx.directions} disabled={done} placeholder="ex.: tomar 1 cápsula ao dia, após o café da manhã" onChange={(e) => setRx({ ...rx, directions: e.target.value })} />
+          </Field>
+        </>
+      )}
 
       {!done && (
         <>
           <Button variant="secondary" onClick={saveDraft}>
-            Salvar rascunho
+            Salvar rascunho da receita e do Seu Plano
           </Button>
 
           <div className="space-y-3 border-t border-border pt-5">
@@ -217,8 +260,12 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
               <Input id="ret" type="number" min={7} max={365} value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="max-w-[160px]" />
             </Field>
             <Button onClick={finish} loading={busy}>
-              Encerrar consulta
+              Encerrar consulta e enviar ao paciente
             </Button>
+            <p className="text-xs text-muted">
+              O paciente recebe na conta e por e-mail dois PDFs: o Seu Plano{plan.length ? ` (${plan.length} itens)` : " (vazio, não será enviado)"} e a receita
+              {outcome === "receita_emitida" ? "" : " (não será emitida com este desfecho)"}.
+            </p>
             <p className="text-xs text-muted">O valor que você recebe é o mesmo com ou sem receita.</p>
           </div>
         </>
@@ -231,7 +278,7 @@ export function PrescriptionBuilder({ appointment, onFinished }: { appointment: 
 }
 
 /** Tabela de ativos: lista privada do médico, usada para montar receitas mais rápido. */
-export function PanelActives() {
+function ActivesManager() {
   const { data, loading, error, reload } = useAsync(() => api.doctorListActives(), []);
   const [form, setForm] = useState({ id: undefined as string | undefined, name: "", default_dose: "", notes: "" });
   const [err, setErr] = useState<string | null>(null);
@@ -259,10 +306,6 @@ export function PanelActives() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Tabela de ativos</h1>
-        <p className="mt-1 text-muted">Só você vê esta lista. Ela serve para adicionar componentes à receita com um clique durante a consulta.</p>
-      </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <div className="overflow-x-auto rounded-card border border-border">
           {loading && <Spinner />}
@@ -332,6 +375,30 @@ export function PanelActives() {
           {err && <Notice tone="danger">{err}</Notice>}
         </Card>
       </div>
+    </div>
+  );
+}
+
+/** Minha biblioteca: ativos da receita e itens prontos do "Seu Plano" (dieta, rotina, cuidados, metas, exames). */
+export function PanelActives() {
+  const { professional } = useAuth();
+  const kind: ProKind = professional?.kind ?? "medico";
+  const tabs = [{ key: "ativos", label: "Ativos da receita", sections: [] as PlanSection[] }, ...planTabs(kind)];
+  const [tab, setTab] = useState("ativos");
+  const current = tabs.find((t) => t.key === tab) ?? tabs[0];
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Minha biblioteca</h1>
+        <p className="mt-1 text-muted">
+          Só você vê esta biblioteca. Deixe salvos os ativos, {kind === "nutricionista" ? "as opções de refeição, a rotina" : "a rotina, os cuidados"}, metas e exames que
+          você mais usa: na consulta, é só clicar para adicionar à receita ou ao Seu Plano do paciente.
+        </p>
+      </div>
+      <div className="mb-6">
+        <PlanTabsBar tabs={tabs} active={tab} onChange={setTab} />
+      </div>
+      {current.key === "ativos" ? <ActivesManager /> : <TemplatesManager key={current.key} sections={current.sections} />}
     </div>
   );
 }

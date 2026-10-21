@@ -1,6 +1,7 @@
 import type { Answers, TriageDefinition } from "@/lib/triage/schema";
 import type { TriageAlert } from "@/lib/triage/engine";
 import type { Slot, AvailabilityRule, DateAvailability } from "@/lib/schedule";
+import type { PlanSection } from "@/content/planSuggestions";
 
 export type Role = "patient" | "staff" | "doctor" | "medical_director" | "admin";
 export type ConsentType = "termos" | "privacidade" | "dados_saude" | "tcle" | "cancelamento" | "marketing";
@@ -106,7 +107,7 @@ export interface Payment {
   created_at: string;
 }
 
-export type DocumentKind = "receita" | "orientacao" | "pedido_exame" | "encaminhamento";
+export type DocumentKind = "receita" | "orientacao" | "pedido_exame" | "encaminhamento" | "plano";
 
 export interface ClinicalDocument {
   id: string;
@@ -143,6 +144,42 @@ export interface Prescription {
 }
 
 export type PrescriptionInput = Pick<Prescription, "form" | "quantity" | "directions" | "items">;
+
+/** Item do "Seu Plano": uma linha de uma seção (objetivo, refeição, rotina, cuidado, exame…). */
+export interface PlanItem {
+  section: PlanSection;
+  title: string;
+  detail?: string | null;
+}
+
+/** "Seu Plano" montado na consulta. Rascunho só do profissional; o paciente vê depois de emitido. */
+export interface CarePlan {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  professional_id: string;
+  document_id: string | null;
+  items: PlanItem[];
+  issued_at: string | null;
+}
+
+/** Biblioteca do profissional: itens prontos para adicionar à ficha com um clique. */
+export interface PlanTemplate {
+  id: string;
+  professional_id: string;
+  section: PlanSection;
+  title: string;
+  detail: string | null;
+}
+
+/** Dados para montar os PDFs de um documento do paciente. */
+export interface DocumentContext {
+  document: ClinicalDocument;
+  patient: { full_name: string | null; cpf: string | null; birth_date: string | null };
+  professional: Pick<Professional, "full_name" | "kind" | "council" | "council_number" | "council_uf" | "rqe" | "specialty"> | null;
+  prescription: Prescription | null;
+  plan: CarePlan | null;
+}
 
 /** Tabela de ativos do médico: lista de consulta rápida, privada de cada profissional. */
 export interface DoctorActive {
@@ -225,6 +262,8 @@ export interface Api {
   getDocumentUrl(doc: ClinicalDocument): Promise<string | null>;
   /** Receita emitida ligada a um documento do próprio paciente (null se não houver). */
   getPrescriptionForDocument(documentId: string): Promise<Prescription | null>;
+  /** Tudo o que o PDF de um documento precisa: paciente, profissional, receita ou plano. */
+  getDocumentContext(documentId: string): Promise<DocumentContext | null>;
   recordPharmacyChoice(documentId: string, choice: "farmashop" | "baixou_pdf"): Promise<void>;
   exportMyData(): Promise<unknown>;
   requestDeletion(): Promise<void>;
@@ -253,11 +292,21 @@ export interface Api {
   doctorDeleteActive(id: string): Promise<void>;
   doctorGetPrescriptionDraft(appointmentId: string): Promise<Prescription | null>;
   doctorSavePrescriptionDraft(appointmentId: string, input: PrescriptionInput): Promise<Prescription>;
-  /** Encerra a consulta: marca como realizada, grava o desfecho e, se houver receita, emite o documento para o paciente. */
+  doctorListTemplates(): Promise<PlanTemplate[]>;
+  doctorSaveTemplate(input: { id?: string; section: PlanSection; title: string; detail: string | null }): Promise<PlanTemplate>;
+  doctorDeleteTemplate(id: string): Promise<void>;
+  doctorGetPlanDraft(appointmentId: string): Promise<CarePlan | null>;
+  doctorSavePlanDraft(appointmentId: string, items: PlanItem[]): Promise<CarePlan>;
+  /**
+   * Encerra a consulta: marca como realizada, grava o desfecho e emite para o paciente
+   * a receita (se houver) e o "Seu Plano" (se houver itens). São dois documentos separados.
+   */
   doctorFinishConsultation(
     appointmentId: string,
-    input: { outcome: OutcomeKind; returnDays: number | null; prescription: PrescriptionInput | null },
-  ): Promise<{ document_id: string | null }>;
+    input: { outcome: OutcomeKind; returnDays: number | null; prescription: PrescriptionInput | null; plan?: PlanItem[] | null },
+  ): Promise<{ document_id: string | null; plan_document_id: string | null }>;
+  /** Envia ao e-mail do paciente os PDFs do Seu Plano e da receita. */
+  doctorSendDocuments(appointmentId: string): Promise<{ sent_to: string | null }>;
   directorListTriageVersions(careLine: string): Promise<TriageVersion[]>;
   directorPublishTriage(careLine: string, definition: TriageDefinition): Promise<TriageVersion>;
   reportSummary(fromISO: string, toISO: string): Promise<ReportSummary>;

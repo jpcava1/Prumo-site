@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Download, FileText, Video } from "lucide-react";
 import { Badge, Button, ButtonLink, Card, Notice, Spinner } from "@/components/ui";
 import { PharmacyChoice, PrescriptionSummary } from "@/components/PharmacyChoice";
+import { PlanSummary } from "@/components/PlanSummary";
 import { useAsync } from "@/hooks/useData";
 import { useFlow } from "@/context/FlowContext";
 import { api, isDemo, type Appointment, type AppointmentStatus, type ClinicalDocument, type DocumentKind } from "@/lib/api";
@@ -27,6 +28,7 @@ const DOC_LABEL: Record<DocumentKind, string> = {
   orientacao: "Orientações",
   pedido_exame: "Pedido de exame",
   encaminhamento: "Encaminhamento",
+  plano: "Seu Plano",
 };
 
 function lineName(slug: string) {
@@ -53,7 +55,10 @@ export function MyAppointments() {
   const past = (data ?? []).filter((a) => !upcoming.includes(a));
   const lastDone = past.find((a) => a.status === "realizado");
   // Receita emitida nos últimos 30 dias aparece em destaque logo após a consulta.
-  const latestRx = (docs ?? []).find((d) => d.kind === "receita" && now - new Date(d.issued_at).getTime() < 30 * 86400_000);
+  // Documentos da última consulta (até 30 dias) aparecem em destaque.
+  const recent = (kind: DocumentKind) => (docs ?? []).find((d) => d.kind === kind && now - new Date(d.issued_at).getTime() < 30 * 86400_000);
+  const latestRx = recent("receita");
+  const latestPlan = recent("plano");
 
   async function cancel(a: Appointment, reschedule: boolean) {
     setMsg(null);
@@ -88,14 +93,25 @@ export function MyAppointments() {
     <div className="space-y-8">
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
 
-      {latestRx && (
+      {(latestRx || latestPlan) && (
         <Card className="border-t-4 border-t-accent">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Consulta concluída</p>
-          <h2 className="mt-2 text-2xl font-semibold">Sua receita está pronta.</h2>
-          <p className="mt-1 text-muted">Veja os componentes e escolha onde manipular: na Farmashop ou em outra farmácia.</p>
-          <ButtonLink to={`/minha-conta/documentos/${latestRx.id}`} className="mt-5">
-            Ver receita e escolher a farmácia
-          </ButtonLink>
+          <h2 className="mt-2 text-2xl font-semibold">
+            {latestPlan && latestRx ? "Seu Plano e sua receita estão prontos." : latestPlan ? "Seu Plano está pronto." : "Sua receita está pronta."}
+          </h2>
+          <p className="mt-1 text-muted">
+            {latestPlan ? "Baixe o Seu Plano em PDF: objetivos, metas, rotina e exames. " : ""}
+            {latestRx ? "Na receita, escolha onde manipular: na Farmashop ou em outra farmácia." : ""}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {latestPlan && <ButtonLink to={`/minha-conta/documentos/${latestPlan.id}`}>Ver Seu Plano</ButtonLink>}
+            {latestRx && (
+              <ButtonLink to={`/minha-conta/documentos/${latestRx.id}`} variant={latestPlan ? "secondary" : "primary"}>
+                Ver receita e escolher a farmácia
+              </ButtonLink>
+            )}
+          </div>
+          <p className="mt-3 text-xs text-muted">Os dois PDFs também foram enviados para o seu e-mail.</p>
         </Card>
       )}
 
@@ -256,6 +272,7 @@ export function DocumentPage() {
   const { id } = useParams();
   const { data: doc, loading } = useAsync<ClinicalDocument | null>(() => api.getDocument(id!), [id]);
   const { data: rx } = useAsync(() => api.getPrescriptionForDocument(id!), [id]);
+  const { data: ctx } = useAsync(() => api.getDocumentContext(id!), [id]);
   const [error, setError] = useState<string | null>(null);
 
   if (loading) return <Spinner />;
@@ -265,7 +282,10 @@ export function DocumentPage() {
     setError(null);
     try {
       const url = await api.getDocumentUrl(doc!);
-      if (url) window.open(url, "_blank", "noopener");
+      if (url) return void window.open(url, "_blank", "noopener");
+      // Sem arquivo pronto no servidor: o PDF é montado aqui mesmo, no aparelho do paciente.
+      const { downloadDocumentPdf } = await import("@/lib/pdf");
+      if (!ctx || !downloadDocumentPdf(ctx)) throw new Error("O PDF ainda não está disponível.");
     } catch (e) {
       setError((e as Error).message);
     }
@@ -282,7 +302,25 @@ export function DocumentPage() {
         </p>
         <h2 className="text-2xl font-semibold">{doc.title}</h2>
       </div>
-      {doc.kind === "receita" ? (
+      {doc.kind === "plano" ? (
+        <>
+          <Card className="border-t-4 border-t-accent">
+            <p className="text-muted">
+              {ctx?.professional ? `Montado por ${ctx.professional.full_name} na sua consulta.` : "Montado na sua consulta."} Baixe, imprima ou mostre para quem
+              vai te acompanhar nessa rotina.
+            </p>
+            <Button className="mt-4" onClick={download}>
+              <Download className="h-4 w-4" /> Baixar Seu Plano (PDF)
+            </Button>
+            {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+          </Card>
+          {ctx?.plan && (
+            <Card>
+              <PlanSummary items={ctx.plan.items} />
+            </Card>
+          )}
+        </>
+      ) : doc.kind === "receita" ? (
         <>
           {rx && (
             <Card>

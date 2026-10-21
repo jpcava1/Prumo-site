@@ -89,10 +89,12 @@ Depois, pelo painel (`/painel/acessos`), dê os papéis `medical_director` ao di
 ```bash
 supabase secrets set ASAAS_API_KEY=... ASAAS_BASE_URL=https://sandbox.asaas.com/api/v3 ASAAS_WEBHOOK_TOKEN=... \
   CRON_SECRET=... TELEMED_WEBHOOK_SECRET=... SITE_URL=https://seudominio.com.br \
-  RESEND_API_KEY=... EMAIL_FROM="Prumo <consultas@seudominio.com.br>"
+  RESEND_API_KEY=... EMAIL_FROM="Prumo <consultas@seudominio.com.br>" \
+  COMPANY_LEGAL_NAME="Prumo Serviços Médicos Ltda." COMPANY_CNPJ="00.000.000/0001-00"
 
 supabase functions deploy create-payment
 supabase functions deploy export-my-data
+supabase functions deploy send-documents
 supabase functions deploy payment-webhook --no-verify-jwt
 supabase functions deploy send-reminders --no-verify-jwt
 supabase functions deploy telemed-webhook --no-verify-jwt

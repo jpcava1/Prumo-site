@@ -9,7 +9,7 @@ export const PANEL_ITEMS: { to: string; label: string; roles: Role[]; profession
   { to: "/painel", label: "Agenda", roles: ["staff", "admin", "medical_director"] },
   { to: "/painel/horarios", label: "Meus horários", roles: ["doctor", "medical_director"], professional: true },
   { to: "/painel/medico", label: "Agenda e atendimento", roles: ["doctor", "medical_director"], professional: true },
-  { to: "/painel/ativos", label: "Tabela de ativos", roles: ["doctor", "medical_director"], professional: true },
+  { to: "/painel/ativos", label: "Minha biblioteca", roles: ["doctor", "medical_director"], professional: true },
   { to: "/painel/profissionais", label: "Profissionais e horários", roles: ["admin", "staff"] },
   { to: "/painel/precos", label: "Linhas e preços", roles: ["admin"] },
   { to: "/painel/triagem", label: "Triagem (versões)", roles: ["medical_director"] },

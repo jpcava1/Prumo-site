@@ -4,10 +4,12 @@ import type {
   AuthUser,
   CareLine,
   ClinicalDocument,
+  CarePlan,
   ConsentType,
   DoctorActive,
   OutcomeKind,
   Payment,
+  PlanTemplate,
   Prescription,
   Professional,
   ProfessionalSignup,
@@ -15,11 +17,12 @@ import type {
   Role,
   TriageVersion,
 } from "./types";
-import { prescriptionText, validatePrescription } from "@/lib/prescription";
+import { prescriptionText, validatePlan, validatePrescription } from "@/lib/prescription";
 import type { Answers } from "@/lib/triage/schema";
 import type { TriageAlert } from "@/lib/triage/engine";
 import { ageOn, isAdult } from "@/lib/triage/engine";
 import { careLineContent, launchSlugs } from "@/content/careLines";
+import { PLAN_SUGGESTIONS } from "@/content/planSuggestions";
 import { triageV1 } from "@/content/triage/v1";
 import { DEFAULT_PRICE_CENTS, DEFAULT_RETURN_PRICE_CENTS } from "@/content/seed";
 import { generateSlots, type AvailabilityRule, type DateAvailability, addDays, canCancelFree } from "@/lib/schedule";
@@ -91,6 +94,9 @@ export function createDemoApi(): Api {
   const outcomes = new Map<string, { outcome: OutcomeKind; return_days: number | null }>();
   const choices: { document_id: string; choice: "farmashop" | "baixou_pdf" }[] = [];
   const prescriptions: Prescription[] = [];
+  const carePlans: CarePlan[] = [];
+  const templates: PlanTemplate[] = [];
+  const sentEmails: { to: string; appointment_id: string; attachments: string[] }[] = [];
   // Tabela de ativos da médica de demonstração (nomes genéricos; o médico cadastra os reais).
   const actives: DoctorActive[] = [1, 2, 3, 4].map((n) => ({
     id: `at${n}`,
@@ -347,6 +353,8 @@ export function createDemoApi(): Api {
       return delay(documents.find((d) => d.id === id) ?? null, 20);
     },
     async getDocumentUrl(doc) {
+      // Receita e Seu Plano viram PDF no próprio navegador (buildDocumentPdf).
+      if (doc.kind === "receita" || doc.kind === "plano") return delay(null, 10);
       const rx = prescriptions.find((p) => p.document_id === doc.id);
       const body = rx ? `\n\n${prescriptionText(rx)}` : "";
       const text = `${doc.title}\n\nDOCUMENTO DE DEMONSTRAÇÃO — sem validade.\nEmitido em ${new Date(doc.issued_at).toLocaleString("pt-BR")}.${body}`;
@@ -355,6 +363,21 @@ export function createDemoApi(): Api {
     async getPrescriptionForDocument(documentId) {
       const u = need();
       return delay(prescriptions.find((p) => p.document_id === documentId && p.patient_id === u.id) ?? null, 20);
+    },
+    async getDocumentContext(documentId) {
+      const u = need();
+      const document = documents.find((d) => d.id === documentId && (d.patient_id === u.id || role() === "medical_director"));
+      if (!document) return delay(null, 10);
+      const appt = appointments.find((a) => a.id === document.appointment_id);
+      const prof = professionals.find((p) => p.id === appt?.professional_id) ?? null;
+      const pat = profiles.get(document.patient_id);
+      return delay({
+        document,
+        patient: { full_name: pat?.full_name ?? null, cpf: pat?.cpf ?? null, birth_date: pat?.birth_date ?? null },
+        professional: prof,
+        prescription: prescriptions.find((p) => p.document_id === documentId) ?? null,
+        plan: carePlans.find((p) => p.document_id === documentId) ?? null,
+      }, 20);
     },
     async recordPharmacyChoice(documentId, choice) {
       choices.push({ document_id: documentId, choice });
@@ -559,25 +582,83 @@ export function createDemoApi(): Api {
       }
       return delay(rx, 30);
     },
-    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription }) {
+    async doctorListTemplates() {
+      const me = myProfessional();
+      return delay(templates.filter((t) => t.professional_id === me.id), 20);
+    },
+    async doctorSaveTemplate(input) {
+      const me = myProfessional();
+      const title = input.title.trim();
+      if (!title) throw new Error("Escreva o texto do item.");
+      const existing = input.id ? templates.find((t) => t.id === input.id && t.professional_id === me.id) : undefined;
+      if (existing) {
+        Object.assign(existing, { section: input.section, title, detail: input.detail?.trim() || null });
+        return delay(existing, 20);
+      }
+      const row: PlanTemplate = { id: uid(), professional_id: me.id, section: input.section, title, detail: input.detail?.trim() || null };
+      templates.push(row);
+      return delay(row, 20);
+    },
+    async doctorDeleteTemplate(id) {
+      const me = myProfessional();
+      const i = templates.findIndex((t) => t.id === id && t.professional_id === me.id);
+      if (i >= 0) templates.splice(i, 1);
+      return delay(undefined, 20);
+    },
+    async doctorGetPlanDraft(appointmentId) {
+      const a = myAppointment(appointmentId);
+      return delay(carePlans.find((p) => p.appointment_id === a.id) ?? null, 20);
+    },
+    async doctorSavePlanDraft(appointmentId, items) {
+      const a = myAppointment(appointmentId);
+      let plan = carePlans.find((p) => p.appointment_id === a.id);
+      if (plan?.document_id) throw new Error("Este plano já foi enviado ao paciente.");
+      const clean = items.map((i) => ({ ...i }));
+      if (plan) plan.items = clean;
+      else {
+        plan = { id: uid(), appointment_id: a.id, patient_id: a.patient_id, professional_id: a.professional_id, document_id: null, issued_at: null, items: clean };
+        carePlans.push(plan);
+      }
+      return delay(plan, 20);
+    },
+    async doctorSendDocuments(appointmentId) {
+      const a = myAppointment(appointmentId);
+      const to = profiles.get(a.patient_id)?.email ?? null;
+      const docs = documents.filter((d) => d.appointment_id === a.id && (d.kind === "plano" || d.kind === "receita"));
+      if (!to || docs.length === 0) return delay({ sent_to: null });
+      sentEmails.push({ to, appointment_id: a.id, attachments: docs.map((d) => d.kind) });
+      return delay({ sent_to: to });
+    },
+    async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription, plan }) {
       const a = myAppointment(appointmentId);
       if (!["confirmado", "realizado"].includes(a.status)) throw new Error("Só é possível encerrar uma consulta confirmada.");
       if (outcome === "receita_emitida" && !prescription) throw new Error("Monte a receita antes de emiti-la.");
       const existing = prescriptions.find((p) => p.appointment_id === a.id);
       if (existing?.document_id) throw new Error("Esta receita já foi emitida.");
       const valid = prescription ? validatePrescription(prescription) : null;
+      const planItems = plan ? validatePlan(plan) : [];
+      const existingPlan = carePlans.find((p) => p.appointment_id === a.id);
+      if (existingPlan?.document_id) throw new Error("Este plano já foi enviado ao paciente.");
       a.status = "realizado";
       outcomes.set(a.id, { outcome, return_days: returnDays });
       const issued_at = new Date().toISOString();
       const base = { appointment_id: a.id, patient_id: a.patient_id, pdf_path: "demo", issued_at };
       documents.push({ ...base, id: uid(), kind: "orientacao", title: "Orientações da consulta" });
-      if (!valid) return delay({ document_id: null });
+      let planDocId: string | null = null;
+      if (planItems.length) {
+        planDocId = uid();
+        documents.push({ ...base, id: planDocId, kind: "plano", title: "Seu Plano" });
+        const pdata = { items: planItems, document_id: planDocId, issued_at };
+        if (existingPlan) Object.assign(existingPlan, pdata);
+        else carePlans.push({ id: uid(), appointment_id: a.id, patient_id: a.patient_id, professional_id: a.professional_id, ...pdata });
+      }
+      if (!valid) return delay({ document_id: null, plan_document_id: planDocId });
       const docId = uid();
       documents.push({ ...base, id: docId, kind: "receita", title: "Receita de suplemento manipulado" });
       const data = { ...valid, document_id: docId, issued_at };
       if (existing) Object.assign(existing, data);
       else prescriptions.push({ id: uid(), appointment_id: a.id, patient_id: a.patient_id, professional_id: a.professional_id, ...data });
-      return delay({ document_id: docId });
+      return delay({ document_id: docId, plan_document_id: planDocId });
     },
     async directorListTriageVersions(careLine) {
       requireRole("medical_director");
@@ -662,6 +743,17 @@ export function createDemoApi(): Api {
             { name: "Componente de exemplo 2", dose: "100 mg" },
             { name: "Componente de exemplo 3", dose: "150 mg" },
           ],
+        });
+        const planDoc = uid();
+        documents.push({ ...base, id: planDoc, kind: "plano", title: "Seu Plano" });
+        carePlans.push({
+          id: uid(),
+          appointment_id: a.id,
+          patient_id: a.patient_id,
+          professional_id: a.professional_id,
+          document_id: planDoc,
+          issued_at: base.issued_at,
+          items: PLAN_SUGGESTIONS.filter((x) => ["objetivo", "meta", "rotina", "exame"].includes(x.section)).slice(0, 12),
         });
       }
       return delay(undefined);
