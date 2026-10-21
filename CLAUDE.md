@@ -22,7 +22,9 @@ Se um teste de `tests/compliance.test.ts`, `tests/pharmacy-choice.test.tsx`, `te
 ## Stack
 
 - React 18 + Vite + TypeScript + Tailwind (tokens em `src/index.css`, identidade "Prumo premium": azul Cosmos #003049, vermelho Crimson #C1121F, creme #FDF0D5).
-- Supabase (região São Paulo): Postgres + Auth (código por e-mail) + Storage privado + Edge Functions (Deno).
+- Supabase (região São Paulo): Postgres + Auth (e-mail e senha) + Storage privado + Edge Functions (Deno).
+- Login: "Login" no topo abre pop-up com "Médico / Nutricionista" ou "Paciente" (`src/components/LoginChooser.tsx`).
+- Profissional se cadastra pelo site (`/profissional/cadastro`, função `register_professional`) e fica **pendente** até a equipe aprovar em `/painel/profissionais` (conferir CRM/CRN). Ele abre horários por dia em `/painel/horarios` (`availability_dates`); `available_slots` só mostra profissional aprovado e ativo. Nutricionista atende só a linha de suplementação.
 - Camada de dados única: `src/lib/api/` com duas implementações da mesma interface (`types.ts`):
   - `supabaseApi.ts` (produção) e `demoApi.ts` (modo demonstração em memória, sem chaves).
 - Banco: `supabase/migrations/*.sql`. Seed gerado de `src/content` com `npm run seed:triage`.

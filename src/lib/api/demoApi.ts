@@ -10,6 +10,7 @@ import type {
   Payment,
   Prescription,
   Professional,
+  ProfessionalSignup,
   Profile,
   Role,
   TriageVersion,
@@ -21,7 +22,7 @@ import { ageOn, isAdult } from "@/lib/triage/engine";
 import { careLineContent, launchSlugs } from "@/content/careLines";
 import { triageV1 } from "@/content/triage/v1";
 import { DEFAULT_PRICE_CENTS, DEFAULT_RETURN_PRICE_CENTS } from "@/content/seed";
-import { generateSlots, type AvailabilityRule, canCancelFree } from "@/lib/schedule";
+import { generateSlots, type AvailabilityRule, type DateAvailability, addDays, canCancelFree } from "@/lib/schedule";
 import { onlyDigits } from "@/lib/cpf";
 import { uid } from "@/lib/utils";
 
@@ -81,6 +82,8 @@ export function createDemoApi(): Api {
     })),
   );
 
+  let dateAvailability: DateAvailability[] = [];
+  const passwords = new Map<string, string>();
   const triage: TriageRow[] = [];
   const appointments: Appointment[] = [];
   const payments: Payment[] = [];
@@ -129,6 +132,23 @@ export function createDemoApi(): Api {
       .filter((a) => ["reservado", "pago", "confirmado", "realizado", "nao_compareceu"].includes(a.status))
       .map((a) => ({ professional_id: a.professional_id, starts_at: a.starts_at, ends_at: a.ends_at }));
 
+  const signInAs = (email: string): AuthUser => {
+    const normalized = email.trim().toLowerCase();
+    let h = 0;
+    for (const ch of normalized) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    user = { id: "demo-" + h.toString(36), email: normalized };
+    if (!profiles.has(user.id)) {
+      profiles.set(user.id, { id: user.id, role: "patient", full_name: null, cpf: null, birth_date: null, phone: null, email: normalized });
+    }
+    listeners.forEach((l) => l(user));
+    return user;
+  };
+  /** Profissionais que aparecem para o paciente: ativos, aprovados e que atendem a linha. */
+  const bookable = (careLine: string) =>
+    professionals.filter(
+      (p) => p.active && (p.approval ?? "aprovado") === "aprovado" && (!p.care_lines?.length || p.care_lines.includes(careLine)),
+    );
+
   const api: Api = {
     mode: "demo",
 
@@ -144,15 +164,23 @@ export function createDemoApi(): Api {
     },
     async verifyCode(email, code) {
       if (code.trim() !== DEMO_CODE) throw new Error(`Código inválido. No modo demonstração use ${DEMO_CODE}.`);
+      return delay(signInAs(email));
+    },
+    async signInWithPassword(email, password) {
       const normalized = email.trim().toLowerCase();
-      let h = 0;
-      for (const ch of normalized) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-      user = { id: "demo-" + h.toString(36), email: normalized };
-      if (!profiles.has(user.id)) {
-        profiles.set(user.id, { id: user.id, role: "patient", full_name: null, cpf: null, birth_date: null, phone: null, email });
-      }
-      listeners.forEach((l) => l(user));
-      return delay(user);
+      const saved = passwords.get(normalized);
+      if (!saved || saved !== password) throw new Error("E-mail ou senha incorretos.");
+      return delay(signInAs(normalized));
+    },
+    async signUpWithPassword(email, password) {
+      const normalized = email.trim().toLowerCase();
+      if (passwords.has(normalized)) throw new Error("Já existe uma conta com este e-mail. Entre com a sua senha.");
+      if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+      passwords.set(normalized, password);
+      return delay(signInAs(normalized));
+    },
+    async requestPasswordReset() {
+      return delay(undefined);
     },
     async signOut() {
       user = null;
@@ -203,11 +231,21 @@ export function createDemoApi(): Api {
       return delay(`demo/${file.name}`);
     },
     async listProfessionals() {
-      return delay(professionals.filter((p) => p.active), 20);
+      return delay(professionals.filter((p) => p.active && (p.approval ?? "aprovado") === "aprovado"), 20);
     },
-    async listSlots(_careLine, fromISO, days) {
+    async listSlots(careLine, fromISO, days) {
       expireHolds();
-      return delay(generateSlots({ rules: availability, busy: busy(), from: new Date(fromISO), days }), 80);
+      const ids = new Set(bookable(careLine).map((p) => p.id));
+      return delay(
+        generateSlots({
+          rules: availability.filter((r) => ids.has(r.professional_id)),
+          dateRules: dateAvailability.filter((r) => ids.has(r.professional_id)),
+          busy: busy(),
+          from: new Date(fromISO),
+          days,
+        }),
+        80,
+      );
     },
     async reserveSlot(input) {
       const u = need();
@@ -226,6 +264,10 @@ export function createDemoApi(): Api {
       });
       const start = new Date(input.starts_at).getTime();
       const end = start + 30 * 60_000;
+      const offered = await api.listSlots(input.care_line, new Date(start - 86400_000).toISOString(), 3);
+      if (!offered.some((s) => s.professional_id === input.professional_id && new Date(s.starts_at).getTime() === start)) {
+        throw new Error("Esse horário acabou de ser reservado. Escolha outro.");
+      }
       const clash = busy().some((b) => b.professional_id === input.professional_id && start < new Date(b.ends_at).getTime() && end > new Date(b.starts_at).getTime());
       if (clash) throw new Error("Esse horário acabou de ser reservado. Escolha outro.");
       const line = careLines.find((c) => c.slug === input.care_line)!;
@@ -387,18 +429,82 @@ export function createDemoApi(): Api {
       requireRole("admin");
       return delay(undefined);
     },
+    async getMyProfessional() {
+      const u = need();
+      return delay(professionals.find((p) => p.user_id === u.id) ?? null, 20);
+    },
+    async registerProfessional(input: ProfessionalSignup) {
+      const u = need();
+      if (professionals.some((p) => p.user_id === u.id)) throw new Error("Você já tem cadastro de profissional.");
+      if (!input.full_name.trim() || !input.council_number.trim() || !/^[A-Z]{2}$/.test(input.council_uf) || !input.graduation_institution.trim() || !input.graduation_year) {
+        throw new Error("Preencha nome, registro no conselho, UF e formação.");
+      }
+      if (input.specialty?.trim() && !input.rqe?.trim()) throw new Error("Especialidade só pode ser informada com RQE.");
+      const prof: Professional = {
+        id: uid(),
+        user_id: u.id,
+        kind: input.kind,
+        full_name: input.full_name.trim(),
+        council: input.kind === "nutricionista" ? "CRN" : "CRM",
+        council_number: input.council_number.trim(),
+        council_uf: input.council_uf,
+        rqe: input.rqe?.trim() || null,
+        specialty: input.specialty?.trim() || null,
+        photo_url: null,
+        bio: input.bio?.trim() || null,
+        active: false,
+        approval: "pendente",
+        graduation_institution: input.graduation_institution.trim(),
+        graduation_year: input.graduation_year,
+        care_lines: input.kind === "nutricionista" ? ["suplementacao"] : [],
+      };
+      professionals.push(prof);
+      const pr = profiles.get(u.id);
+      if (pr) profiles.set(u.id, { ...pr, full_name: pr.full_name ?? prof.full_name, phone: input.phone ? onlyDigits(input.phone) : pr.phone });
+      return delay(prof);
+    },
+    async myListDateAvailability(fromDay, days) {
+      const me = myProfessional();
+      const to = addDays(fromDay, days);
+      return delay(
+        dateAvailability.filter((r) => r.professional_id === me.id && r.day >= fromDay && r.day < to).sort((a, b) => (a.day + a.start_time).localeCompare(b.day + b.start_time)),
+        30,
+      );
+    },
+    async mySaveDayAvailability(day, blocks) {
+      const me = myProfessional();
+      for (const b of blocks) if (!(b.end_time > b.start_time)) throw new Error("O fim precisa ser depois do início.");
+      dateAvailability = [
+        ...dateAvailability.filter((r) => !(r.professional_id === me.id && r.day === day)),
+        ...blocks.map((b) => ({ professional_id: me.id, day, start_time: b.start_time, end_time: b.end_time })),
+      ];
+      return delay(undefined, 30);
+    },
+    async adminReviewProfessional(id, approve) {
+      requireRole("admin", "staff");
+      const p = professionals.find((x) => x.id === id);
+      if (p) Object.assign(p, { approval: approve ? "aprovado" : "recusado", active: approve });
+      return delay(undefined);
+    },
+    async demoApproveMyProfessional() {
+      const u = need();
+      const p = professionals.find((x) => x.user_id === u.id);
+      if (p) Object.assign(p, { approval: "aprovado", active: true });
+      return delay(undefined, 20);
+    },
     async doctorAgenda() {
-      requireRole("doctor", "medical_director");
+      const me = myProfessional();
       return delay(
         appointments
-          .filter((a) => a.professional_id === "p1" && ["confirmado", "realizado", "nao_compareceu"].includes(a.status))
+          .filter((a) => a.professional_id === me.id && ["pago", "confirmado", "realizado", "nao_compareceu"].includes(a.status))
           .map(withProf)
           .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
       );
     },
     async doctorGetTriage(appointmentId) {
-      requireRole("doctor", "medical_director");
-      const a = appointments.find((x) => x.id === appointmentId);
+      const me = myProfessional();
+      const a = appointments.find((x) => x.id === appointmentId && (x.professional_id === me.id || role() === "medical_director"));
+      if (!a) throw new Error("Você não tem permissão para isso.");
       const t = triage.find((x) => x.id === a?.triage_response_id);
       const def = versions.find((v) => v.id === t?.version_id)?.definition ?? triageV1("cabelo");
       const p = a ? profiles.get(a.patient_id) : undefined;
@@ -410,17 +516,15 @@ export function createDemoApi(): Api {
       });
     },
     async doctorSetOutcome(appointmentId, outcome, returnDays) {
-      requireRole("doctor", "medical_director");
+      myAppointment(appointmentId);
       outcomes.set(appointmentId, { outcome, return_days: returnDays });
       return delay(undefined);
     },
     async doctorListActives() {
-      requireRole("doctor", "medical_director");
       const me = myProfessional();
       return delay(actives.filter((a) => a.professional_id === me.id).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")), 30);
     },
     async doctorSaveActive(input) {
-      requireRole("doctor", "medical_director");
       const me = myProfessional();
       const name = input.name.trim();
       if (!name) throw new Error("Informe o nome do ativo.");
@@ -434,19 +538,16 @@ export function createDemoApi(): Api {
       return delay(row, 30);
     },
     async doctorDeleteActive(id) {
-      requireRole("doctor", "medical_director");
       const me = myProfessional();
       const i = actives.findIndex((a) => a.id === id && a.professional_id === me.id);
       if (i >= 0) actives.splice(i, 1);
       return delay(undefined, 30);
     },
     async doctorGetPrescriptionDraft(appointmentId) {
-      requireRole("doctor", "medical_director");
       const a = myAppointment(appointmentId);
       return delay(prescriptions.find((p) => p.appointment_id === a.id) ?? null, 30);
     },
     async doctorSavePrescriptionDraft(appointmentId, input) {
-      requireRole("doctor", "medical_director");
       const a = myAppointment(appointmentId);
       let rx = prescriptions.find((p) => p.appointment_id === a.id);
       if (rx?.document_id) throw new Error("Esta receita já foi emitida.");
@@ -459,7 +560,6 @@ export function createDemoApi(): Api {
       return delay(rx, 30);
     },
     async doctorFinishConsultation(appointmentId, { outcome, returnDays, prescription }) {
-      requireRole("doctor", "medical_director");
       const a = myAppointment(appointmentId);
       if (!["confirmado", "realizado"].includes(a.status)) throw new Error("Só é possível encerrar uma consulta confirmada.");
       if (outcome === "receita_emitida" && !prescription) throw new Error("Monte a receita antes de emiti-la.");

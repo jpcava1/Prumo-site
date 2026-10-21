@@ -84,3 +84,28 @@ describe("analytics e LGPD", () => {
     expect(ics).not.toMatch(/cabelo|pele|sono|suplement/i);
   });
 });
+
+describe("horários por dia", () => {
+  it("soma horários de um dia específico às regras semanais, sem repetir", () => {
+    const now = new Date("2026-11-02T09:00:00-03:00"); // segunda
+    const s = generateSlots({
+      rules: [{ professional_id: "a", weekday: 3, start_time: "08:00", end_time: "09:00" }],
+      dateRules: [
+        { professional_id: "a", day: "2026-11-04", start_time: "08:30", end_time: "09:30" },
+        { professional_id: "b", day: "2026-11-03", start_time: "14:00", end_time: "15:00" },
+      ],
+      busy: [],
+      from: now,
+      days: 3,
+      now,
+    });
+    expect(s.map((x) => `${x.professional_id} ${x.starts_at}`)).toEqual([
+      "b 2026-11-03T14:00:00-03:00",
+      "b 2026-11-03T14:30:00-03:00",
+      "a 2026-11-04T08:00:00-03:00",
+      "a 2026-11-04T08:30:00-03:00",
+      "a 2026-11-04T09:00:00-03:00",
+    ]);
+  });
+});
+

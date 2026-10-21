@@ -9,6 +9,7 @@ import type {
   Payment,
   Prescription,
   Professional,
+  ProfessionalSignup,
   Profile,
   ReportSummary,
   TriageForDoctor,
@@ -34,6 +35,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   receita_vazia: "Adicione pelo menos um componente à receita.",
   receita_incompleta: "Preencha forma, quantidade, modo de uso e o nome e a dose de cada componente.",
   receita_ja_emitida: "Esta receita já foi emitida.",
+  profissional_ja_cadastrado: "Você já tem cadastro de profissional.",
+  cadastro_profissional_incompleto: "Preencha nome, registro no conselho, UF e formação.",
+  especialidade_sem_rqe: "Especialidade só pode ser informada com RQE.",
 };
 
 function friendly(err: { message?: string } | null): Error {
@@ -48,7 +52,7 @@ function must<T>(res: { data: T | null; error: { message?: string } | null }): T
 }
 
 const PROFESSIONAL_PUBLIC_COLUMNS =
-  "id, user_id, kind, full_name, council, council_number, council_uf, rqe, specialty, photo_url, bio, active";
+  "id, user_id, kind, full_name, council, council_number, council_uf, rqe, specialty, photo_url, bio, active, approval, graduation_institution, graduation_year, care_lines";
 
 export function createSupabaseApi(url: string, anonKey: string): Api {
   const sb: SupabaseClient = createClient(url, anonKey, {
@@ -82,6 +86,26 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
       const { data, error } = await sb.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: "email" });
       if (error || !data.user) throw new Error("Código inválido ou vencido.");
       return { id: data.user.id, email: data.user.email ?? "" };
+    },
+    async signInWithPassword(email, password) {
+      const { data, error } = await sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error || !data.user) throw new Error("E-mail ou senha incorretos.");
+      return { id: data.user.id, email: data.user.email ?? "" };
+    },
+    async signUpWithPassword(email, password) {
+      const { data, error } = await sb.auth.signUp({ email: email.trim().toLowerCase(), password });
+      if (error) {
+        if (/registered|exists/i.test(error.message)) throw new Error("Já existe uma conta com este e-mail. Entre com a sua senha.");
+        if (/password/i.test(error.message)) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+        throw new Error("Não foi possível criar a conta agora. Tente de novo em instantes.");
+      }
+      // Com confirmação de e-mail ligada no Supabase, a sessão só existe depois do clique no link.
+      if (!data.session || !data.user) throw new Error("Enviamos um link de confirmação para o seu e-mail. Confirme e depois entre com a sua senha.");
+      return { id: data.user.id, email: data.user.email ?? "" };
+    },
+    async requestPasswordReset(email) {
+      const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/entrar` });
+      if (error) throw new Error("Não foi possível enviar o e-mail agora. Tente de novo em instantes.");
     },
     async signOut() {
       await sb.auth.signOut();
@@ -154,7 +178,9 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
       return path;
     },
     async listProfessionals() {
-      return must(await sb.from("professionals").select(PROFESSIONAL_PUBLIC_COLUMNS).eq("active", true).order("full_name")) as Professional[];
+      return must(
+        await sb.from("professionals").select(PROFESSIONAL_PUBLIC_COLUMNS).eq("active", true).eq("approval", "aprovado").order("full_name"),
+      ) as Professional[];
     },
     async listSlots(careLine, fromISO, days) {
       const res = await sb.rpc("available_slots", { p_care_line: careLine, p_from: fromISO.slice(0, 10), p_days: days });
@@ -275,6 +301,57 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
     async adminSetRole(email, role) {
       must(await sb.rpc("admin_set_role", { p_email: email, p_role: role }));
     },
+    async getMyProfessional() {
+      const { data } = await sb.auth.getUser();
+      if (!data.user) return null;
+      return must(await sb.from("professionals").select(PROFESSIONAL_PUBLIC_COLUMNS).eq("user_id", data.user.id).maybeSingle()) as Professional | null;
+    },
+    async registerProfessional(input: ProfessionalSignup) {
+      return must(
+        await sb.rpc("register_professional", {
+          p_kind: input.kind,
+          p_full_name: input.full_name,
+          p_council_number: input.council_number,
+          p_council_uf: input.council_uf,
+          p_graduation_institution: input.graduation_institution,
+          p_graduation_year: input.graduation_year,
+          p_specialty: input.specialty,
+          p_rqe: input.rqe,
+          p_bio: input.bio,
+          p_phone: input.phone,
+        }),
+      ) as Professional;
+    },
+    async myListDateAvailability(fromDay, days) {
+      const prof = await api.getMyProfessional();
+      if (!prof) return [];
+      const to = new Date(`${fromDay}T12:00:00Z`);
+      to.setUTCDate(to.getUTCDate() + days);
+      const res = await sb
+        .from("availability_dates")
+        .select("professional_id, day, start_time, end_time")
+        .eq("professional_id", prof.id)
+        .gte("day", fromDay)
+        .lt("day", to.toISOString().slice(0, 10))
+        .order("day")
+        .order("start_time");
+      return (must(res) as { professional_id: string; day: string; start_time: string; end_time: string }[]).map((r) => ({
+        ...r,
+        start_time: r.start_time.slice(0, 5),
+        end_time: r.end_time.slice(0, 5),
+      }));
+    },
+    async mySaveDayAvailability(day, blocks) {
+      const prof = await api.getMyProfessional();
+      if (!prof) throw new Error(ERROR_MESSAGES.sem_permissao);
+      must(await sb.from("availability_dates").delete().eq("professional_id", prof.id).eq("day", day));
+      if (blocks.length) {
+        must(await sb.from("availability_dates").insert(blocks.map((b) => ({ professional_id: prof.id, day, start_time: b.start_time, end_time: b.end_time }))));
+      }
+    },
+    async adminReviewProfessional(id, approve) {
+      must(await sb.from("professionals").update({ approval: approve ? "aprovado" : "recusado", active: approve }).eq("id", id));
+    },
     async doctorAgenda() {
       const uid = await uidOrThrow();
       const prof = must(await sb.from("professionals").select("id").eq("user_id", uid).maybeSingle()) as { id: string } | null;
@@ -284,7 +361,7 @@ export function createSupabaseApi(url: string, anonKey: string): Api {
         .from("appointments")
         .select("id, patient_id, professional_id, care_line, kind, starts_at, ends_at, status, room_url, price_cents, triage_response_id, hold_expires_at")
         .eq("professional_id", prof.id)
-        .in("status", ["confirmado", "realizado", "nao_compareceu"])
+        .in("status", ["pago", "confirmado", "realizado", "nao_compareceu"])
         .gte("starts_at", from)
         .order("starts_at");
       return must(res) as Appointment[];

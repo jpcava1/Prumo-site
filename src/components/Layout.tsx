@@ -6,6 +6,7 @@ import { isDemo } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { getCookieConsent, setCookieConsent, isPrivatePath } from "@/lib/analytics";
 import { buttonClass, Container } from "./ui";
+import { LoginDialog } from "./LoginChooser";
 import { cn } from "@/lib/utils";
 
 export function Logo({ className }: { className?: string }) {
@@ -30,7 +31,9 @@ const nav = [
 
 function Header() {
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const { user, professional } = useAuth();
+  const accountLink = professional ? { to: "/painel/horarios", label: "Área do profissional" } : { to: "/minha-conta", label: "Minha conta" };
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
 
@@ -46,9 +49,15 @@ function Header() {
           ))}
         </nav>
         <div className="hidden items-center gap-3 md:flex">
-          <Link to={user ? "/minha-conta" : "/entrar"} className="text-[15px] text-ink/80 no-underline hover:text-primary">
-            {user ? "Minha conta" : "Entrar"}
-          </Link>
+          {user ? (
+            <Link to={accountLink.to} className="text-[15px] text-ink/80 no-underline hover:text-primary">
+              {accountLink.label}
+            </Link>
+          ) : (
+            <button type="button" data-testid="abrir-login" onClick={() => setLoginOpen(true)} className="text-[13px] font-medium text-muted hover:text-primary">
+              Login
+            </button>
+          )}
           <Link to="/comecar" className={buttonClass("primary", "sm")}>
             Começar
           </Link>
@@ -60,14 +69,27 @@ function Header() {
       {open && (
         <nav className="border-t border-border bg-bg md:hidden" aria-label="Menu móvel">
           <Container className="flex flex-col gap-1 py-3">
-            {[...nav, { to: user ? "/minha-conta" : "/entrar", label: user ? "Minha conta" : "Entrar" }].map((n) => (
+            {[...nav, ...(user ? [accountLink] : [])].map((n) => (
               <Link key={n.to} to={n.to} className="rounded-lg px-2 py-3 text-ink no-underline hover:bg-primary-soft">
                 {n.label}
               </Link>
             ))}
+            {!user && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setLoginOpen(true);
+                }}
+                className="rounded-lg px-2 py-3 text-left text-sm text-muted hover:bg-primary-soft"
+              >
+                Login
+              </button>
+            )}
           </Container>
         </nav>
       )}
+      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
     </header>
   );
 }
@@ -124,7 +146,7 @@ function DemoBanner() {
   if (!isDemo) return null;
   return (
     <div className="bg-cream px-4 py-2 text-center text-sm text-ink">
-      <strong>Modo demonstração:</strong> dados fictícios em memória, nada é salvo. Código de login: <strong>123456</strong>.
+      <strong>Modo demonstração:</strong> dados fictícios em memória, nada é salvo. Crie uma conta com qualquer e-mail e senha.
     </div>
   );
 }

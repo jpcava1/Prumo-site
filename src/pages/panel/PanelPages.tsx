@@ -290,7 +290,7 @@ export function PanelProfessionals() {
 
   return (
     <div>
-      <H1 sub="O valor pago por consulta fica em uma tabela separada, só para admin.">Profissionais e horários</H1>
+      <H1 sub="Confira o registro no conselho (portal do CFM ou do CRN) antes de aprovar. O valor pago por consulta fica em uma tabela separada, só para admin.">Profissionais e horários</H1>
       {loading && <Spinner />}
       <div className="space-y-2">
         {data?.map((p) => (
@@ -298,14 +298,32 @@ export function PanelProfessionals() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="font-semibold">
-                  {p.full_name} {!p.active && <Badge>inativo</Badge>}
+                  {p.full_name}{" "}
+                  {p.approval === "pendente" ? (
+                    <Badge tone="warning">aguardando aprovação</Badge>
+                  ) : p.approval === "recusado" ? (
+                    <Badge tone="danger">recusado</Badge>
+                  ) : (
+                    !p.active && <Badge>inativo</Badge>
+                  )}
                 </p>
                 <p className="text-sm text-muted">
-                  {p.council} {p.council_number}/{p.council_uf}
+                  {p.kind === "nutricionista" ? "Nutricionista" : "Médico(a)"} · {p.council} {p.council_number}/{p.council_uf}
                   {p.rqe ? ` · RQE ${p.rqe}` : ""}
+                  {p.graduation_institution ? ` · ${p.graduation_institution}${p.graduation_year ? ` (${p.graduation_year})` : ""}` : ""}
                 </p>
               </div>
               <div className="flex gap-2">
+                {p.approval === "pendente" && (
+                  <>
+                    <Button size="sm" onClick={async () => { await api.adminReviewProfessional(p.id, true); reload(); }}>
+                      Aprovar
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={async () => { await api.adminReviewProfessional(p.id, false); reload(); }}>
+                      Recusar
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" variant="secondary" onClick={() => setSelected(selected?.id === p.id ? null : p)}>
                   Horários
                 </Button>

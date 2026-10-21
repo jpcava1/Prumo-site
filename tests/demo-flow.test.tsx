@@ -99,6 +99,69 @@ describe("jornada do paciente (demonstração)", () => {
     expect(JSON.stringify(mine)).not.toMatch(/price|preco|valor/i);
   });
 
+  it("login com e-mail e senha", async () => {
+    const api = createDemoApi();
+    await expect(api.signInWithPassword("nova@teste.com", "12345678")).rejects.toThrow(/incorretos/);
+    await expect(api.signUpWithPassword("nova@teste.com", "curta")).rejects.toThrow(/8 caracteres/);
+    const u = await api.signUpWithPassword("nova@teste.com", "senha-forte-1");
+    await api.signOut();
+    await expect(api.signInWithPassword("nova@teste.com", "errada-123")).rejects.toThrow(/incorretos/);
+    expect((await api.signInWithPassword("NOVA@teste.com", "senha-forte-1")).id).toBe(u.id);
+    await expect(api.signUpWithPassword("nova@teste.com", "outra-senha-1")).rejects.toThrow(/Já existe/);
+  });
+
+  it("nutricionista se cadastra, abre horários e o paciente agenda com ela depois da aprovação", async () => {
+    const api = createDemoApi();
+    // profissional
+    await api.signUpWithPassword("nutri@teste.com", "senha-forte-1");
+    expect(await api.getMyProfessional()).toBeNull();
+    await expect(
+      api.registerProfessional({ kind: "nutricionista", full_name: "Ana Nutri", council_number: "1234", council_uf: "PR", graduation_institution: "UEL", graduation_year: 2025, specialty: "Esportiva", rqe: null, bio: null, phone: "43999990000" }),
+    ).rejects.toThrow(/RQE/);
+    const prof = await api.registerProfessional({ kind: "nutricionista", full_name: "Ana Nutri", council_number: "1234", council_uf: "PR", graduation_institution: "UEL", graduation_year: 2025, specialty: null, rqe: null, bio: null, phone: "43999990000" });
+    expect(prof).toMatchObject({ council: "CRN", approval: "pendente", active: false, care_lines: ["suplementacao"] });
+
+    // abre 08:00–10:00 depois de amanhã (4 horários de 30 min)
+    const d = new Date(Date.now() + 2 * 86400_000);
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
+    await api.mySaveDayAvailability(day, [{ start_time: "08:00", end_time: "10:00" }]);
+    expect(await api.myListDateAvailability(day, 1)).toHaveLength(1);
+    const mine = async (line: string) => (await api.listSlots(line, new Date().toISOString(), 14)).filter((s) => s.professional_id === prof.id);
+
+    // pendente: o paciente ainda não vê
+    expect(await mine("suplementacao")).toHaveLength(0);
+    await api.demoApproveMyProfessional!();
+    const slots = await mine("suplementacao");
+    expect(slots.map((s) => s.starts_at.slice(11, 16))).toEqual(["08:00", "08:30", "09:00", "09:30"]);
+    expect(slots.every((s) => s.starts_at.startsWith(day))).toBe(true);
+    // nutricionista não atende linhas que exigem médico
+    expect(await mine("cabelo")).toHaveLength(0);
+    expect((await api.listProfessionals()).some((p) => p.id === prof.id)).toBe(true);
+
+    // paciente agenda o primeiro horário
+    await api.signOut();
+    await api.signUpWithPassword("paciente2@teste.com", "senha-forte-1");
+    await api.saveProfile({ full_name: "Paula Paciente", cpf: "529.982.247-25", birth_date: "1990-01-01", phone: "43988887777" });
+    await api.recordConsents(["termos", "privacidade", "dados_saude"]);
+    const v = await api.getTriageVersion("suplementacao");
+    const t = await api.saveTriageDraft({ care_line: "suplementacao", version_id: v.id, answers: {} });
+    await api.submitTriage(t, {}, []);
+    const appt = await api.reserveSlot({ professional_id: prof.id, starts_at: slots[0].starts_at, care_line: "suplementacao", kind: "primeira", triage_response_id: t });
+    await api.demoConfirmPayment!(appt.id);
+    expect((await api.listSlots("suplementacao", new Date().toISOString(), 14)).some((s) => s.professional_id === prof.id && s.starts_at === slots[0].starts_at)).toBe(false);
+
+    // a profissional vê a consulta na agenda dela
+    await api.signOut();
+    await api.signInWithPassword("nutri@teste.com", "senha-forte-1");
+    const agenda = await api.doctorAgenda();
+    expect(agenda.map((a) => a.id)).toEqual([appt.id]);
+
+    // fechar o dia remove os horários livres, mas não a consulta marcada
+    await api.mySaveDayAvailability(day, []);
+    expect(await mine("suplementacao")).toHaveLength(0);
+    expect((await api.doctorAgenda()).map((a) => a.id)).toEqual([appt.id]);
+  });
+
   it("paciente não acessa o painel", async () => {
     const api = createDemoApi();
     await api.verifyCode("p@teste.com", DEMO_CODE);

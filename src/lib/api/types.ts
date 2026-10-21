@@ -1,6 +1,6 @@
 import type { Answers, TriageDefinition } from "@/lib/triage/schema";
 import type { TriageAlert } from "@/lib/triage/engine";
-import type { Slot, AvailabilityRule } from "@/lib/schedule";
+import type { Slot, AvailabilityRule, DateAvailability } from "@/lib/schedule";
 
 export type Role = "patient" | "staff" | "doctor" | "medical_director" | "admin";
 export type ConsentType = "termos" | "privacidade" | "dados_saude" | "tcle" | "cancelamento" | "marketing";
@@ -43,6 +43,26 @@ export interface Professional {
   photo_url: string | null;
   bio: string | null;
   active: boolean;
+  /** Cadastro feito pelo próprio profissional fica "pendente" até a Prumo conferir o conselho. */
+  approval?: "pendente" | "aprovado" | "recusado";
+  graduation_institution?: string | null;
+  graduation_year?: number | null;
+  /** Linhas que atende; vazio = todas. Nutricionista atende só suplementação. */
+  care_lines?: string[];
+}
+
+/** Questionário de cadastro do profissional. */
+export interface ProfessionalSignup {
+  kind: "medico" | "nutricionista";
+  full_name: string;
+  council_number: string;
+  council_uf: string;
+  graduation_institution: string;
+  graduation_year: number;
+  specialty: string | null;
+  rqe: string | null;
+  bio: string | null;
+  phone: string | null;
 }
 
 export type AppointmentStatus =
@@ -175,6 +195,11 @@ export interface Api {
   onAuthChange(cb: (user: AuthUser | null) => void): () => void;
   sendCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<AuthUser>;
+  /** Login com e-mail e senha. */
+  signInWithPassword(email: string, password: string): Promise<AuthUser>;
+  /** Cria a conta com e-mail e senha e já entra. */
+  signUpWithPassword(email: string, password: string): Promise<AuthUser>;
+  requestPasswordReset(email: string): Promise<void>;
   signOut(): Promise<void>;
 
   // Paciente
@@ -213,6 +238,13 @@ export interface Api {
   adminListAvailability(professionalId: string): Promise<AvailabilityRule[]>;
   adminSaveAvailability(professionalId: string, rules: Omit<AvailabilityRule, "professional_id">[]): Promise<void>;
   adminSetRole(email: string, role: Role): Promise<void>;
+  // Profissional (médico ou nutricionista) cadastrado pelo site
+  getMyProfessional(): Promise<Professional | null>;
+  registerProfessional(input: ProfessionalSignup): Promise<Professional>;
+  myListDateAvailability(fromDay: string, days: number): Promise<DateAvailability[]>;
+  /** Substitui os horários de um dia (YYYY-MM-DD) pelos blocos informados. */
+  mySaveDayAvailability(day: string, blocks: { start_time: string; end_time: string }[]): Promise<void>;
+  adminReviewProfessional(id: string, approve: boolean): Promise<void>;
   doctorAgenda(): Promise<Appointment[]>;
   doctorGetTriage(appointmentId: string): Promise<TriageForDoctor>;
   doctorSetOutcome(appointmentId: string, outcome: OutcomeKind, returnDays: number | null): Promise<void>;
@@ -234,4 +266,6 @@ export interface Api {
   demoCompleteConsultation?(appointmentId: string, withPrescription: boolean): Promise<void>;
   demoConfirmPayment?(appointmentId: string): Promise<void>;
   demoSetRole?(role: Role): Promise<void>;
+  /** Demonstração: aprova o cadastro do profissional logado (na vida real, quem aprova é a Prumo). */
+  demoApproveMyProfessional?(): Promise<void>;
 }

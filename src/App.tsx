@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { SiteLayout } from "@/components/Layout";
-import { RequireAuth, RequireRole } from "@/components/Guards";
+import { RequireAuth, RequireProfessional, RequireRole } from "@/components/Guards";
 import { FlowProvider } from "@/context/FlowContext";
 import Home from "@/pages/public/Home";
 import HowItWorks from "@/pages/public/HowItWorks";
@@ -21,6 +21,8 @@ import StepConfirmado from "@/pages/flow/StepConfirmado";
 import AccountShell from "@/pages/account/AccountShell";
 import { DocumentPage, Help, MyAppointments, MyData, MyDocuments, MyPayments } from "@/pages/account/AccountPages";
 import PanelShell from "@/pages/panel/PanelShell";
+import ProfessionalSignup from "@/pages/professional/ProfessionalSignup";
+import ProfessionalHours from "@/pages/professional/ProfessionalHours";
 import { PanelAccess, PanelActives, PanelAgenda, PanelDoctor, PanelPrices, PanelProfessionals, PanelReports, PanelTriage } from "@/pages/panel/PanelPages";
 
 export default function App() {
@@ -46,6 +48,14 @@ export default function App() {
           <Route path="tcle" element={<Tcle />} />
           <Route path="cancelamento" element={<Cancellation />} />
           <Route path="entrar" element={<Entrar />} />
+          <Route
+            path="profissional/cadastro"
+            element={
+              <RequireAuth>
+                <ProfessionalSignup />
+              </RequireAuth>
+            }
+          />
 
           {/* Fluxo de agendamento */}
           <Route path="comecar" element={<FlowShell />}>
@@ -84,8 +94,9 @@ export default function App() {
             }
           >
             <Route index element={<RequireRole roles={["staff", "admin", "medical_director"]}><PanelAgenda /></RequireRole>} />
-            <Route path="medico" element={<RequireRole roles={["doctor", "medical_director"]}><PanelDoctor /></RequireRole>} />
-            <Route path="ativos" element={<RequireRole roles={["doctor", "medical_director"]}><PanelActives /></RequireRole>} />
+            <Route path="horarios" element={<RequireProfessional><ProfessionalHours /></RequireProfessional>} />
+            <Route path="medico" element={<RequireProfessional><PanelDoctor /></RequireProfessional>} />
+            <Route path="ativos" element={<RequireProfessional><PanelActives /></RequireProfessional>} />
             <Route path="profissionais" element={<RequireRole roles={["admin", "staff"]}><PanelProfessionals /></RequireRole>} />
             <Route path="precos" element={<RequireRole roles={["admin"]}><PanelPrices /></RequireRole>} />
             <Route path="triagem" element={<RequireRole roles={["medical_director"]}><PanelTriage /></RequireRole>} />
