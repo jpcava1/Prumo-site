@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_POSTHOG_KEY?: string;
   readonly VITE_META_PIXEL_ID?: string;
   readonly VITE_GA_ID?: string;
+  readonly VITE_ROUTER?: "memory";
 }
 
 interface ImportMeta {

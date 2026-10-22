@@ -100,7 +100,7 @@ export default function Home() {
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
               <Eyebrow>Quem atende</Eyebrow>
-              <h2 className="text-3xl font-semibold sm:text-4xl">Nossos médicos</h2>
+              <h2 className="text-3xl font-semibold sm:text-4xl">Nossos profissionais</h2>
             </div>
             <Link to="/medicos" className="hidden text-sm font-medium sm:block">
               Ver todos
@@ -120,7 +120,7 @@ export default function Home() {
           <Card className="bg-primary-soft/40">
             <h3 className="text-2xl font-semibold">Para quem é</h3>
             <p className="mt-3 text-ink/90">
-              Adultos que querem cuidar de energia e disposição, dieta, treino ou suplementação com um médico, sem fila e sem sair de casa.
+              Adultos que querem cuidar de energia e disposição, dieta, treino ou suplementação com médico, nutricionista ou personal trainer, sem fila e sem sair de casa.
             </p>
           </Card>
           <Card>

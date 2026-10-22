@@ -306,3 +306,23 @@ describe("governança da triagem", () => {
     expect(v.version).toBe(2);
   });
 });
+
+describe("personal trainer (CREF)", () => {
+  it("entrega plano de treino, mas não emite receita nem pedido de exame", async () => {
+    const [p] = await asAdmin<{ id: string }>(
+      db,
+      "insert into public.professionals (kind, full_name, council, council_number, council_uf, care_lines) values ('educador_fisico', 'Personal Teste', 'CREF', '000001-G', 'PR', '{treino}') returning id",
+    );
+    const [a] = await asAdmin<{ id: string }>(
+      db,
+      `insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, status, price_cents)
+       values ($1, $2, 'treino', now() - interval '3 days', now() - interval '3 days' + interval '30 minutes', 'realizado', 9990) returning id`,
+      [PATIENT_A, p.id],
+    );
+    const insertDoc = (kind: string) =>
+      asAdmin(db, "insert into public.clinical_documents (appointment_id, patient_id, professional_id, kind, title) values ($1, $2, $3, $4, 'Doc')", [a.id, PATIENT_A, p.id, kind]);
+    await expect(insertDoc("orientacao")).resolves.toBeDefined();
+    await expect(insertDoc("receita")).rejects.toThrow(/cref_nao_prescreve/);
+    await expect(insertDoc("pedido_exame")).rejects.toThrow(/cref_nao_prescreve/);
+  });
+});

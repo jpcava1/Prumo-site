@@ -236,6 +236,7 @@ export function PanelDoctor() {
 
 /* Profissionais e horários --------------------------------------------------------- */
 type ProfForm = Omit<Professional, "id"> & { id?: string };
+const councilKind: Record<Professional["council"], Professional["kind"]> = { CRM: "medico", CRN: "nutricionista", CREF: "educador_fisico" };
 const emptyProf: ProfForm = {
   user_id: null,
   kind: "medico",
@@ -247,6 +248,7 @@ const emptyProf: ProfForm = {
   specialty: null,
   photo_url: null,
   bio: null,
+  care_lines: [],
   active: true,
 };
 
@@ -364,9 +366,10 @@ export function PanelProfessionals() {
           </Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Conselho" htmlFor="pc">
-              <select id="pc" className="h-12 w-full rounded-xl border border-border bg-surface px-3" value={form.council} onChange={(e) => upd({ council: e.target.value as "CRM" | "CRN", kind: e.target.value === "CRN" ? "nutricionista" : "medico" })}>
-                <option value="CRM">CRM</option>
-                <option value="CRN">CRN</option>
+              <select id="pc" className="h-12 w-full rounded-xl border border-border bg-surface px-3" value={form.council} onChange={(e) => upd({ council: e.target.value as Professional["council"], kind: councilKind[e.target.value as Professional["council"]] })}>
+                <option value="CRM">CRM (médico)</option>
+                <option value="CRN">CRN (nutricionista)</option>
+                <option value="CREF">CREF (personal trainer)</option>
               </select>
             </Field>
             <Field label="Número" htmlFor="pnum">
@@ -384,6 +387,21 @@ export function PanelProfessionals() {
               <Input id="psp" value={form.specialty ?? ""} onChange={(e) => upd({ specialty: e.target.value || null })} />
             </Field>
           </div>
+          <fieldset>
+            <legend className="mb-2 text-[15px] font-medium">Linhas que atende (nenhuma marcada = todas)</legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {(Object.keys(careLineContent) as CareLineSlug[]).map((slug) => (
+                <label key={slug} className="flex items-center gap-2 text-[15px]">
+                  <input
+                    type="checkbox"
+                    checked={form.care_lines.includes(slug)}
+                    onChange={(e) => upd({ care_lines: e.target.checked ? [...form.care_lines, slug] : form.care_lines.filter((s) => s !== slug) })}
+                  />
+                  {careLineContent[slug].name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <Field label="Foto (URL)" htmlFor="pph">
             <Input id="pph" value={form.photo_url ?? ""} onChange={(e) => upd({ photo_url: e.target.value || null })} />
           </Field>

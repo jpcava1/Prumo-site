@@ -318,7 +318,7 @@ export function triageV1(slug: CareLineSlug): TriageDefinition {
   return {
     care_line: slug,
     title: titles[slug],
-    intro: "Estas respostas vão para o médico antes da consulta. Leva cerca de 5 minutos.",
+    intro: "Estas respostas vão para o profissional que vai atender você, antes da consulta. Leva cerca de 5 minutos.",
     questions: [...common, ...byLine[slug], ...closing],
   };
 }

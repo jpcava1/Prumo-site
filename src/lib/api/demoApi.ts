@@ -64,9 +64,9 @@ export function createDemoApi(): Api {
   }));
 
   const professionals: Professional[] = [
-    { id: "p1", user_id: "demo-doctor", kind: "medico", full_name: "Dra. Helena Prado (demonstração)", council: "CRM", council_number: "00001", council_uf: "PR", rqe: null, specialty: "Clínica médica", photo_url: null, bio: "Profissional fictícia para demonstração do site.", active: true },
-    { id: "p2", user_id: null, kind: "medico", full_name: "Dr. Rafael Tavares (demonstração)", council: "CRM", council_number: "00002", council_uf: "PR", rqe: null, specialty: "Dermatologia", photo_url: null, bio: "Profissional fictício para demonstração do site.", active: true },
-    { id: "p3", user_id: null, kind: "medico", full_name: "Dra. Lívia Moraes (demonstração)", council: "CRM", council_number: "00003", council_uf: "SP", rqe: null, specialty: "Medicina de família", photo_url: null, bio: "Profissional fictícia para demonstração do site.", active: true },
+    { id: "p1", user_id: "demo-doctor", kind: "medico", full_name: "Dra. Helena Prado (demonstração)", council: "CRM", council_number: "00001", council_uf: "PR", rqe: null, specialty: "Clínica médica", photo_url: null, bio: "Profissional fictícia para demonstração do site.", care_lines: ["energia-e-disposicao", "suplementacao"], active: true },
+    { id: "p2", user_id: null, kind: "nutricionista", full_name: "Rafael Tavares (demonstração)", council: "CRN", council_number: "00002", council_uf: "PR", rqe: null, specialty: "Nutrição", photo_url: null, bio: "Profissional fictício para demonstração do site.", care_lines: ["dieta", "suplementacao"], active: true },
+    { id: "p3", user_id: null, kind: "educador_fisico", full_name: "Lívia Moraes (demonstração)", council: "CREF", council_number: "000003-G", council_uf: "PR", rqe: null, specialty: "Personal trainer", photo_url: null, bio: "Profissional fictícia para demonstração do site.", care_lines: ["treino"], active: true },
   ];
 
   let availability: AvailabilityRule[] = professionals.flatMap((p, i) =>
@@ -180,9 +180,11 @@ export function createDemoApi(): Api {
     async listProfessionals() {
       return delay(professionals.filter((p) => p.active), 20);
     },
-    async listSlots(_careLine, fromISO, days) {
+    async listSlots(careLine, fromISO, days) {
       expireHolds();
-      return delay(generateSlots({ rules: availability, busy: busy(), from: new Date(fromISO), days }), 80);
+      const serves = new Set(professionals.filter((p) => p.active && (p.care_lines.length === 0 || p.care_lines.includes(careLine))).map((p) => p.id));
+      const rules = availability.filter((r) => serves.has(r.professional_id));
+      return delay(generateSlots({ rules, busy: busy(), from: new Date(fromISO), days }), 80);
     },
     async reserveSlot(input) {
       const u = need();
@@ -447,8 +449,11 @@ export function createDemoApi(): Api {
       if (!a) return;
       a.status = "realizado";
       const base = { appointment_id: a.id, patient_id: a.patient_id, pdf_path: "demo", issued_at: new Date().toISOString() };
-      documents.push({ ...base, id: uid(), kind: "orientacao", title: "Orientações da consulta" });
-      if (withPrescription) documents.push({ ...base, id: uid(), kind: "receita", title: "Receita digital" });
+      // Personal trainer (CREF) entrega o plano de treino como orientação; receita só com CRM ou CRN.
+      const pro = professionals.find((p) => p.id === a.professional_id);
+      const trainer = pro?.council === "CREF";
+      documents.push({ ...base, id: uid(), kind: "orientacao", title: trainer ? "Plano de treino personalizado" : "Orientações da consulta" });
+      if (withPrescription && !trainer) documents.push({ ...base, id: uid(), kind: "receita", title: "Receita digital" });
       return delay(undefined);
     },
     async demoSetRole(r) {

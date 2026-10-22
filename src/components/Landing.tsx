@@ -27,10 +27,10 @@ export function LandingHero({ price }: { price: number | null }) {
           </svg>
         </div>
         <div className="lp-hero-copy">
-          <h1 id="lp-hero-title">Marque seu exame</h1>
+          <h1 id="lp-hero-title">Marque sua consulta</h1>
           <p className="lp-lede">Comece de onde você está.</p>
           <p className="lp-body">
-            Uma consulta por vídeo, com médico, para entender o que seu corpo está pedindo. Sem fila, sem sair de casa. A gente encontra
+            Uma consulta por vídeo com médico, nutricionista ou personal trainer, para entender o que seu corpo está pedindo. Sem fila, sem sair de casa. A gente encontra
             você no seu momento e ajuda a dar o próximo passo, um de cada vez.
           </p>
           <p className="lp-facts">
@@ -78,7 +78,7 @@ const panels: Panel[] = [
     pos: "35% 60%",
     glyph: <path fill="currentColor" d="M16 4h8v12h12v8H24v12h-8V24H4v-8h12z" />,
     items: [
-      `Vídeo de até ${policy.consultMinutes} minutos com médico`,
+      `Vídeo de até ${policy.consultMinutes} minutos com um profissional da equipe`,
       `Escolha o horário nos próximos ${policy.bookingWindowDays} dias`,
       `Pague com Pix ou cartão em até ${policy.maxInstallments}x`,
       `Remarque grátis até ${policy.freeRescheduleHours} horas antes`,
@@ -116,8 +116,8 @@ const panels: Panel[] = [
       </>
     ),
     items: [
-      "Um plano simples para energia, dieta, treino e sono",
-      "Pequenos passos que cabem no seu dia",
+      "Treino personalizado com um personal trainer",
+      "Plano alimentar com um nutricionista",
       "Retorno para ajustar o que não funcionou",
       "Tudo registrado na sua área do paciente",
     ],
