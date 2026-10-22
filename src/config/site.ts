@@ -17,9 +17,12 @@ export const company = {
   ombudsmanEmail: "ouvidoria@seudominio.com.br",
 };
 
-/** Site da Farmashop (empresa B, outro CNPJ). O botão só abre este link. Nada é enviado. */
+/** WhatsApp da Farmashop (empresa B, outro CNPJ). O botão só abre a conversa com uma mensagem pronta.
+ *  A mensagem não leva receita nem dado de saúde: o paciente envia a receita por conta própria. */
+export const FARMASHOP_WHATSAPP = "5543988251010";
+export const FARMASHOP_MESSAGE = "Olá tudo bem?\nEu venho pela Prumo e gostaria de pedir o meu suplemento personalizado";
 export const FARMASHOP_URL: string =
-  import.meta.env.VITE_FARMASHOP_URL || "https://www.farmashop.com.br/enviar-receita";
+  import.meta.env.VITE_FARMASHOP_URL || `https://wa.me/${FARMASHOP_WHATSAPP}?text=${encodeURIComponent(FARMASHOP_MESSAGE)}`;
 
 export const pharmacyPartner = {
   name: "Farmashop",

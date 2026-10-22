@@ -2,15 +2,11 @@ import { Navigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { ButtonLink, Card, Eyebrow, Section } from "@/components/ui";
 import { careLineContent, type CareLineSlug } from "@/content/careLines";
-import { useCareLines } from "@/hooks/useData";
-import { formatBRL } from "@/lib/utils";
 import { FaqList } from "./Home";
 
 /** Página de entrada para anúncios de cada tema. Sem nome de ativo, sem promessa. */
 export default function CareLinePage({ slug }: { slug: CareLineSlug }) {
   const c = careLineContent[slug];
-  const { data: lines } = useCareLines();
-  const line = lines?.find((l) => l.slug === slug);
   if (!c) return <Navigate to="/" replace />;
 
   return (
@@ -26,7 +22,7 @@ export default function CareLinePage({ slug }: { slug: CareLineSlug }) {
               <ButtonLink to="/comecar" state={{ motivo: slug }} size="lg">
                 Começar
               </ButtonLink>
-              {line && <p className="mt-3 text-sm text-muted">Consulta {formatBRL(line.price_cents)} · até 30 minutos, por vídeo</p>}
+              <p className="mt-3 text-sm text-muted">Consulta de até 30 minutos, por vídeo</p>
             </div>
           </div>
           <Card>

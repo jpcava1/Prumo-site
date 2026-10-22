@@ -2,55 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tokens "Prumo calmo" em RGB (para funcionar com opacidade no Tailwind). */
+/* Tokens da Prumo em RGB, para opacidade no Tailwind. */
 :root {
-  --bg: 247 245 239;          /* #F7F5EF */
+  --bg: 234 242 232;          /* #EAF2E8 verde-claro (fundo do site) */
   --surface: 255 255 255;     /* #FFFFFF */
+  /* Identidade verde da Prumo (logo oficial), em fundo branco. Os nomes cream/sky/deep
+     vêm da versão anterior e foram mantidos para os componentes que já os usam. */
+  --cream: 220 234 219;       /* #DCEADB verde-claro mais forte (faixas de destaque) */
   --ink: 31 42 36;            /* #1F2A24 */
   --muted: 94 107 100;        /* #5E6B64 */
-  --primary: 47 93 80;        /* #2F5D50 */
+  --primary: 47 93 80;        /* #2F5D50 verde-pinho */
   --primary-soft: 220 232 226;/* #DCE8E2 */
   --primary-ink: 255 255 255; /* texto sobre o botão primário */
-  --accent: 200 135 58;       /* #C8873A — só detalhes, nunca texto pequeno */
-  --border: 227 224 214;      /* #E3E0D6 */
+  --sky: 156 195 174;         /* #9CC3AE verde-sálvia */
+  --deep: 12 25 18;           /* #0C1912 verde-escuro da logo */
+  --deep-ink: 202 216 186;    /* #CAD8BA sálvia sobre o verde-escuro */
+  --accent: 200 135 58;       /* #C8873A ocre, só detalhes */
+  --accent-deep: 229 129 79;  /* #E5814F cobre do traço da logo */
+  --border: 207 223 205;      /* #CFDFCD borda esverdeada */
   --danger: 179 38 30;        /* #B3261E */
   --success: 46 125 79;       /* #2E7D4F */
   /* Landing (página inicial) */
   --lp-on-photo: 244 246 242;   /* texto sobre a foto do hero */
-  --lp-shade: 12 20 16;         /* sombra sobre a foto (igual nos dois temas) */
+  --lp-shade: 12 20 16;         /* sombra sobre a foto */
   --lp-copper: 229 129 79;      /* traço sob a logo */
   --lp-logo-ink: 202 216 186;   /* verde-sálvia das letras da logo */
   --lp-logo-plate: 12 25 18;    /* verde-escuro do fundo da logo */
   --lp-glass: 244 246 242;      /* véu dos painéis */
-  --lp-glass-a: 0.66;
+  --lp-glass-a: 0.55;
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: 18 23 20;
-    --surface: 26 33 29;
-    --ink: 238 241 236;
-    --muted: 163 174 168;
-    --primary: 127 184 164;
-    --primary-soft: 36 54 47;
-    --primary-ink: 15 26 22;
-    --accent: 217 163 95;
-    --border: 42 51 46;
-    --danger: 242 184 181;
-    --success: 143 209 168;
-    --lp-glass: 14 22 18;
-    --lp-glass-a: 0.64;
-    color-scheme: dark;
-  }
-}
+/* Site sempre em fundo verde-claro (sem tema escuro), por decisão de marca. */
 
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
   body {
     @apply bg-bg text-ink font-sans antialiased;
   }
-  h1, h2, h3 { @apply font-display text-ink; letter-spacing: -0.01em; }
+  h1, h2, h3 { @apply font-display text-ink; letter-spacing: -0.015em; text-wrap: balance; }
   a { @apply underline-offset-4; }
   :focus-visible { outline: 2px solid rgb(var(--primary)); outline-offset: 2px; border-radius: 6px; }
 }
@@ -65,7 +55,7 @@
   .prumo-dot {
     /* posicionado em relação ao item da lista, que fica 1.75rem à direita da linha */
     position: absolute; left: -1.65rem; width: 0.75rem; height: 0.75rem; border-radius: 999px;
-    background: rgb(var(--surface)); border: 2px solid rgb(var(--primary));
+    background: rgb(var(--surface)); border: 2px solid rgb(var(--accent));
   }
 }
 
@@ -85,14 +75,22 @@
     padding: 72px 1rem 72px;
   }
   .lp-hero-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; container-type: size; }
-  .lp-hero-bg img {
-    position: absolute; left: 50%; top: 50vh; top: 50svh; max-width: none; height: auto;
-    width: max(104cqw, 110svh, calc((100cqh - 50svh) * 1.3));
-    transform: translate(-50.8%, -37.2%); filter: blur(0.5px);
+  /* A foto original é pequena: ela fica perto do tamanho real (sem esticar) e as laterais
+     recebem uma cópia bem desfocada da própria foto. */
+  .lp-hero-backdrop {
+    position: absolute; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); max-width: none;
+    object-fit: cover; filter: blur(28px) brightness(.85) saturate(1.05);
+  }
+  .lp-hero-photo {
+    position: absolute; left: 50%; top: 50vh; top: 50svh; max-width: none; width: auto;
+    height: max(134svh, calc((100cqh - 50svh) / 0.628));
+    transform: translate(-50.8%, -37.2%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%);
   }
   /* desfoque leve em degradê: 25% no topo e 25% na base */
   .lp-hero-blur { position: absolute; left: 0; right: 0; height: 25%; pointer-events: none;
-    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
   .lp-hero-blur-top { top: 0; -webkit-mask-image: linear-gradient(180deg, #000, transparent); mask-image: linear-gradient(180deg, #000, transparent); }
   .lp-hero-blur-bottom { bottom: 0; -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent); }
   .lp-hero-bg::after {
@@ -100,7 +98,7 @@
     background:
       radial-gradient(70% 60% at 0% 80%, rgb(var(--lp-shade) / 0.55) 0%, transparent 70%),
       linear-gradient(180deg, rgb(var(--lp-shade) / 0.45) 0%, rgb(var(--lp-shade) / 0.08) 26%, transparent 40%,
-        transparent 58%, rgb(var(--lp-shade) / 0.55) 76%, rgb(var(--lp-shade) / 0.82) 100%);
+        transparent 58%, rgb(var(--lp-shade) / 0.55) 76%, rgb(var(--lp-shade) / 0.88) 94%, rgb(var(--lp-shade)) 100%);
   }
   .lp-hero-inner { position: relative; z-index: 1; width: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
   .lp-plumb { display: flex; flex-direction: column; align-items: center; margin: 0 0 max(36px, calc(50svh - 110px)); }
@@ -128,9 +126,13 @@
   }
 
   /* Tela 2: logo + três painéis com foto desfocada */
-  .lp-services { padding: 64px 1rem 88px; }
+  /* Degradê do fim da tela 1 (escuro da foto) até o verde-claro do site, ao longo de toda a tela 2. */
+  .lp-services {
+    padding: 64px 1rem 88px;
+    background: linear-gradient(180deg, rgb(var(--lp-shade)) 0%, rgb(var(--lp-shade) / 0.55) 30%, rgb(var(--lp-shade) / 0.18) 65%, rgb(var(--bg) / 0) 100%) rgb(var(--bg));
+  }
   .lp-services-head { display: flex; justify-content: center; margin-bottom: 44px; }
-  .lp-brand { width: min(300px, 100%); padding: 22px 26px 24px; border-radius: 14px; background: rgb(var(--lp-logo-plate)); }
+  .lp-brand { width: min(300px, 100%); }
   .lp-brand-art { position: relative; display: block; aspect-ratio: 920 / 268; }
   .lp-brand-line { position: absolute; top: 96.8%; left: 18.5%; width: 64.8%; height: 2px;
     background: linear-gradient(90deg, transparent, rgb(var(--lp-copper)) 18%, rgb(var(--lp-copper)) 82%, transparent); }
@@ -142,8 +144,8 @@
     border: 1px solid rgb(255 255 255 / .5); transition: transform .35s cubic-bezier(.2,.7,.2,1);
   }
   .lp-card::before, .lp-card::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-  .lp-card::before { inset: -24px; background: var(--img) var(--pos, center) / cover no-repeat; filter: blur(7px) saturate(.9); transform: scale(1.04); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
-  .lp-card::after { background: linear-gradient(180deg, rgb(var(--lp-glass) / var(--lp-glass-a)) 0%, rgb(var(--lp-glass) / calc(var(--lp-glass-a) * .75)) 45%, rgb(var(--lp-glass) / var(--lp-glass-a)) 100%); }
+  .lp-card::before { inset: -24px; background: var(--img) var(--pos, center) / cover no-repeat; filter: blur(3px) saturate(.95); transform: scale(1.04); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+  .lp-card::after { background: linear-gradient(180deg, rgb(var(--lp-glass) / var(--lp-glass-a)) 0%, rgb(var(--lp-glass) / calc(var(--lp-glass-a) * .6)) 45%, rgb(var(--lp-glass) / var(--lp-glass-a)) 100%); }
   .lp-card:hover { transform: translateY(-6px); }
   .lp-card:hover::before { transform: scale(1.09); }
   .lp-chip { font-size: 11px; line-height: 1.3; letter-spacing: .14em; text-transform: uppercase; padding: 8px 14px; border-radius: 8px; background: rgb(var(--surface) / .75); color: rgb(var(--muted)); }

@@ -36,7 +36,3 @@ export function useProfessionals() {
 }
 
 /** Menor preço de consulta entre as linhas ativas (para "a partir de"). */
-export function lowestPrice(lines: CareLine[] | null): number | null {
-  const active = (lines ?? []).filter((l) => l.status === "ativa");
-  return active.length ? Math.min(...active.map((l) => l.price_cents)) : null;
-}

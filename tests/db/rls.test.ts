@@ -179,7 +179,7 @@ describe("agenda e reserva", () => {
       [prof1, slot, tA],
     );
     expect(appt.status).toBe("reservado");
-    expect(appt.price_cents).toBe(9990);
+    expect(appt.price_cents).toBe(19900); // preço da linha (seed)
     expect(new Date(appt.hold_expires_at).getTime()).toBeGreaterThan(Date.now());
 
     await expect(

@@ -22,16 +22,19 @@ describe("tela da receita", () => {
     const baixar = screen.getByTestId("opcao-baixar");
     expect(farmashop.className).toBe(baixar.className);
     expect(farmashop).toHaveTextContent(/Pedir na Farmashop/);
-    expect(baixar).toHaveTextContent(/Baixar e levar a outra farmácia/);
+    expect(baixar).toHaveTextContent(/Salvar receita e levar a outra farmácia/);
   });
 
-  it("o botão da Farmashop só abre o site dela em nova aba", () => {
+  it("o botão da Farmashop só abre o WhatsApp dela em nova aba, sem dado de saúde na mensagem", () => {
     render(<PharmacyChoice document={doc} />);
     const link = screen.getByTestId("opcao-farmashop");
     expect(link.getAttribute("href")).toBe(FARMASHOP_URL);
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
     expect(link.getAttribute("href")).not.toMatch(/[?&](doc|receita|cpf|token|id)=/i);
+    expect(link.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/5543988251010\?text=/);
+    const text = decodeURIComponent(link.getAttribute("href")!.split("text=")[1]);
+    expect(text).toBe("Olá tudo bem?\nEu venho pela Prumo e gostaria de pedir o meu suplemento personalizado");
   });
 
   it("deixa claro que a receita vale em qualquer farmácia e que a Prumo não recebe nada", () => {

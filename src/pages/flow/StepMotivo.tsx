@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { Notice, Spinner } from "@/components/ui";
 import { useFlow } from "@/context/FlowContext";
 import { useCareLines } from "@/hooks/useData";
-import { formatBRL } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 export default function StepMotivo() {
@@ -53,7 +52,7 @@ export default function StepMotivo() {
                 <span className="block text-muted">{l.short}</span>
               </span>
               <span className="flex shrink-0 items-center gap-2 text-sm text-muted">
-                {formatBRL(l.price_cents)} <ArrowRight className="h-5 w-5 text-primary" aria-hidden />
+                <ArrowRight className="h-5 w-5 text-primary" aria-hidden />
               </span>
             </button>
           ))}

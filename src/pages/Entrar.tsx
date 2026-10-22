@@ -1,26 +1,18 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Card, Section } from "@/components/ui";
-import { EmailCodeLogin } from "@/components/EmailCodeLogin";
-import { useAuth } from "@/context/AuthContext";
+import { LoginChooser } from "@/components/LoginChooser";
 
 export default function Entrar() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { refreshProfile } = useAuth();
   const from = (location.state as { from?: string } | null)?.from ?? "/minha-conta";
 
   return (
     <Section>
       <div className="mx-auto max-w-md">
-        <h1 className="text-3xl font-semibold">Entrar</h1>
-        <p className="mt-2 text-muted">Use o e-mail da sua conta. Enviamos um código, sem senha.</p>
+        <h1 className="text-3xl font-semibold">Login</h1>
+        <p className="mt-2 text-muted">Como você quer entrar?</p>
         <Card className="mt-8">
-          <EmailCodeLogin
-            onDone={async () => {
-              await refreshProfile();
-              navigate(from, { replace: true });
-            }}
-          />
+          <LoginChooser patientRedirect={from} />
         </Card>
       </div>
     </Section>

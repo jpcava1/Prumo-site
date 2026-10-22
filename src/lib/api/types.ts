@@ -1,6 +1,7 @@
 import type { Answers, TriageDefinition } from "@/lib/triage/schema";
 import type { TriageAlert } from "@/lib/triage/engine";
-import type { Slot, AvailabilityRule } from "@/lib/schedule";
+import type { Slot, AvailabilityRule, DateAvailability } from "@/lib/schedule";
+import type { PlanSection } from "@/content/planSuggestions";
 
 export type Role = "patient" | "staff" | "doctor" | "medical_director" | "admin";
 export type ConsentType = "termos" | "privacidade" | "dados_saude" | "tcle" | "cancelamento" | "marketing";
@@ -45,6 +46,24 @@ export interface Professional {
   /** Linhas que o profissional atende. Vazio = todas as linhas ativas. */
   care_lines: string[];
   active: boolean;
+  /** Cadastro feito pelo próprio profissional fica "pendente" até a Prumo conferir o conselho. */
+  approval?: "pendente" | "aprovado" | "recusado";
+  graduation_institution?: string | null;
+  graduation_year?: number | null;
+}
+
+/** Questionário de cadastro do profissional. */
+export interface ProfessionalSignup {
+  kind: "medico" | "nutricionista" | "educador_fisico";
+  full_name: string;
+  council_number: string;
+  council_uf: string;
+  graduation_institution: string;
+  graduation_year: number;
+  specialty: string | null;
+  rqe: string | null;
+  bio: string | null;
+  phone: string | null;
 }
 
 export type AppointmentStatus =
@@ -88,7 +107,7 @@ export interface Payment {
   created_at: string;
 }
 
-export type DocumentKind = "receita" | "orientacao" | "pedido_exame" | "encaminhamento";
+export type DocumentKind = "receita" | "orientacao" | "pedido_exame" | "encaminhamento" | "plano";
 
 export interface ClinicalDocument {
   id: string;
@@ -98,6 +117,77 @@ export interface ClinicalDocument {
   title: string;
   pdf_path: string | null;
   issued_at: string;
+}
+
+/** Componente de uma receita de suplemento manipulado (ativo + dose por unidade). */
+export interface PrescriptionItem {
+  name: string;
+  dose: string;
+}
+
+/**
+ * Receita montada pelo médico durante a consulta.
+ * Só o médico autor (e o diretor técnico) vê o rascunho; o paciente vê depois de emitida.
+ * Sem preço, sem farmácia: a receita é do paciente.
+ */
+export interface Prescription {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  professional_id: string;
+  document_id: string | null;
+  form: string;
+  quantity: string;
+  directions: string;
+  items: PrescriptionItem[];
+  issued_at: string | null;
+}
+
+export type PrescriptionInput = Pick<Prescription, "form" | "quantity" | "directions" | "items">;
+
+/** Item do "Seu Plano": uma linha de uma seção (objetivo, refeição, rotina, cuidado, exame…). */
+export interface PlanItem {
+  section: PlanSection;
+  title: string;
+  detail?: string | null;
+}
+
+/** "Seu Plano" montado na consulta. Rascunho só do profissional; o paciente vê depois de emitido. */
+export interface CarePlan {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  professional_id: string;
+  document_id: string | null;
+  items: PlanItem[];
+  issued_at: string | null;
+}
+
+/** Biblioteca do profissional: itens prontos para adicionar à ficha com um clique. */
+export interface PlanTemplate {
+  id: string;
+  professional_id: string;
+  section: PlanSection;
+  title: string;
+  detail: string | null;
+}
+
+/** Dados para montar os PDFs de um documento do paciente. */
+export interface DocumentContext {
+  document: ClinicalDocument;
+  patient: { full_name: string | null; cpf: string | null; birth_date: string | null };
+  professional: Pick<Professional, "full_name" | "kind" | "council" | "council_number" | "council_uf" | "rqe" | "specialty"> | null;
+  prescription: Prescription | null;
+  plan: CarePlan | null;
+}
+
+/** Tabela de ativos do médico: lista de consulta rápida, privada de cada profissional. */
+export interface DoctorActive {
+  id: string;
+  professional_id: string;
+  name: string;
+  default_dose: string | null;
+  notes: string | null;
 }
 
 export type OutcomeKind = "orientacao" | "receita_emitida" | "pedido_exame" | "encaminhamento" | "fora_escopo";
@@ -142,6 +232,11 @@ export interface Api {
   onAuthChange(cb: (user: AuthUser | null) => void): () => void;
   sendCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<AuthUser>;
+  /** Login com e-mail e senha. */
+  signInWithPassword(email: string, password: string): Promise<AuthUser>;
+  /** Cria a conta com e-mail e senha e já entra. */
+  signUpWithPassword(email: string, password: string): Promise<AuthUser>;
+  requestPasswordReset(email: string): Promise<void>;
   signOut(): Promise<void>;
 
   // Paciente
@@ -165,6 +260,10 @@ export interface Api {
   listMyDocuments(): Promise<ClinicalDocument[]>;
   getDocument(id: string): Promise<ClinicalDocument | null>;
   getDocumentUrl(doc: ClinicalDocument): Promise<string | null>;
+  /** Receita emitida ligada a um documento do próprio paciente (null se não houver). */
+  getPrescriptionForDocument(documentId: string): Promise<Prescription | null>;
+  /** Tudo o que o PDF de um documento precisa: paciente, profissional, receita ou plano. */
+  getDocumentContext(documentId: string): Promise<DocumentContext | null>;
   recordPharmacyChoice(documentId: string, choice: "farmashop" | "baixou_pdf"): Promise<void>;
   exportMyData(): Promise<unknown>;
   requestDeletion(): Promise<void>;
@@ -178,9 +277,36 @@ export interface Api {
   adminListAvailability(professionalId: string): Promise<AvailabilityRule[]>;
   adminSaveAvailability(professionalId: string, rules: Omit<AvailabilityRule, "professional_id">[]): Promise<void>;
   adminSetRole(email: string, role: Role): Promise<void>;
+  // Profissional (médico ou nutricionista) cadastrado pelo site
+  getMyProfessional(): Promise<Professional | null>;
+  registerProfessional(input: ProfessionalSignup): Promise<Professional>;
+  myListDateAvailability(fromDay: string, days: number): Promise<DateAvailability[]>;
+  /** Substitui os horários de um dia (YYYY-MM-DD) pelos blocos informados. */
+  mySaveDayAvailability(day: string, blocks: { start_time: string; end_time: string }[]): Promise<void>;
+  adminReviewProfessional(id: string, approve: boolean): Promise<void>;
   doctorAgenda(): Promise<Appointment[]>;
   doctorGetTriage(appointmentId: string): Promise<TriageForDoctor>;
   doctorSetOutcome(appointmentId: string, outcome: OutcomeKind, returnDays: number | null): Promise<void>;
+  doctorListActives(): Promise<DoctorActive[]>;
+  doctorSaveActive(input: { id?: string; name: string; default_dose: string | null; notes: string | null }): Promise<DoctorActive>;
+  doctorDeleteActive(id: string): Promise<void>;
+  doctorGetPrescriptionDraft(appointmentId: string): Promise<Prescription | null>;
+  doctorSavePrescriptionDraft(appointmentId: string, input: PrescriptionInput): Promise<Prescription>;
+  doctorListTemplates(): Promise<PlanTemplate[]>;
+  doctorSaveTemplate(input: { id?: string; section: PlanSection; title: string; detail: string | null }): Promise<PlanTemplate>;
+  doctorDeleteTemplate(id: string): Promise<void>;
+  doctorGetPlanDraft(appointmentId: string): Promise<CarePlan | null>;
+  doctorSavePlanDraft(appointmentId: string, items: PlanItem[]): Promise<CarePlan>;
+  /**
+   * Encerra a consulta: marca como realizada, grava o desfecho e emite para o paciente
+   * a receita (se houver) e o "Seu Plano" (se houver itens). São dois documentos separados.
+   */
+  doctorFinishConsultation(
+    appointmentId: string,
+    input: { outcome: OutcomeKind; returnDays: number | null; prescription: PrescriptionInput | null; plan?: PlanItem[] | null },
+  ): Promise<{ document_id: string | null; plan_document_id: string | null }>;
+  /** Envia ao e-mail do paciente os PDFs do Seu Plano e da receita. */
+  doctorSendDocuments(appointmentId: string): Promise<{ sent_to: string | null }>;
   directorListTriageVersions(careLine: string): Promise<TriageVersion[]>;
   directorPublishTriage(careLine: string, definition: TriageDefinition): Promise<TriageVersion>;
   reportSummary(fromISO: string, toISO: string): Promise<ReportSummary>;
@@ -189,4 +315,6 @@ export interface Api {
   demoCompleteConsultation?(appointmentId: string, withPrescription: boolean): Promise<void>;
   demoConfirmPayment?(appointmentId: string): Promise<void>;
   demoSetRole?(role: Role): Promise<void>;
+  /** Demonstração: aprova o cadastro do profissional logado (na vida real, quem aprova é a Prumo). */
+  demoApproveMyProfessional?(): Promise<void>;
 }

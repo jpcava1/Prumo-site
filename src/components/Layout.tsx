@@ -6,6 +6,7 @@ import { isDemo } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { getCookieConsent, setCookieConsent, isPrivatePath } from "@/lib/analytics";
 import { buttonClass, Container } from "./ui";
+import { LoginDialog } from "./LoginChooser";
 import { cn } from "@/lib/utils";
 
 /** Logo oficial (recorte transparente usado como máscara; a cor vem do token). */
@@ -19,15 +20,15 @@ export function Logo({ className, light }: { className?: string; light?: boolean
 
 const nav = [
   { to: "/como-funciona", label: "Como funciona" },
-  { to: "/preco", label: "Preço" },
   { to: "/medicos", label: "Equipe" },
-  { to: "/transparencia", label: "Transparência" },
-  { to: "/perguntas", label: "Perguntas" },
+  { to: "/perguntas", label: "Dúvidas" },
 ];
 
 function Header() {
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const { user, professional } = useAuth();
+  const accountLink = professional ? { to: "/painel/horarios", label: "Área do profissional" } : { to: "/minha-conta", label: "Minha conta" };
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
 
@@ -65,9 +66,15 @@ function Header() {
           ))}
         </nav>
         <div className="hidden items-center gap-3 md:flex">
-          <Link to={user ? "/minha-conta" : "/entrar"} className={cn("text-[15px] no-underline", overPhoto ? "text-white/90 hover:text-white" : "text-ink/80 hover:text-primary")}>
-            {user ? "Minha conta" : "Entrar"}
-          </Link>
+          {user ? (
+            <Link to={accountLink.to} className={cn("text-[15px] no-underline", overPhoto ? "text-white/90 hover:text-white" : "text-ink/80 hover:text-primary")}>
+              {accountLink.label}
+            </Link>
+          ) : (
+            <button type="button" data-testid="abrir-login" onClick={() => setLoginOpen(true)} className={cn("text-[13px] font-medium", overPhoto ? "text-white/90 hover:text-white" : "text-muted hover:text-primary")}>
+              Login
+            </button>
+          )}
           <Link to="/comecar" className={buttonClass("primary", "sm")}>
             Começar
           </Link>
@@ -79,21 +86,34 @@ function Header() {
       {open && (
         <nav className="border-t border-border bg-bg md:hidden" aria-label="Menu móvel">
           <Container className="flex flex-col gap-1 py-3">
-            {[...nav, { to: user ? "/minha-conta" : "/entrar", label: user ? "Minha conta" : "Entrar" }].map((n) => (
+            {[...nav, ...(user ? [accountLink] : [])].map((n) => (
               <Link key={n.to} to={n.to} className="rounded-lg px-2 py-3 text-ink no-underline hover:bg-primary-soft">
                 {n.label}
               </Link>
             ))}
+            {!user && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setLoginOpen(true);
+                }}
+                className="rounded-lg px-2 py-3 text-left text-sm text-muted hover:bg-primary-soft"
+              >
+                Login
+              </button>
+            )}
           </Container>
         </nav>
       )}
+      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
     </header>
   );
 }
 
 function Footer() {
   return (
-    <footer className="mt-16 border-t border-border bg-surface">
+    <footer className="mt-16 border-t-4 border-t-primary bg-cream text-ink">
       <Container className="grid gap-10 py-12 md:grid-cols-[1.3fr_1fr_1fr]">
         <div className="space-y-3">
           <Logo />
@@ -101,26 +121,26 @@ function Footer() {
             Consulta online com médico identificado. Se houver indicação, a receita é sua e você escolhe a farmácia.
           </p>
           <p className="text-sm text-muted">
-            Em caso de urgência, ligue <strong className="text-ink">192 (SAMU)</strong>.
+            Em caso de urgência, ligue <strong className="text-accent">192 (SAMU)</strong>.
           </p>
         </div>
         <div>
-          <p className="mb-3 text-sm font-semibold">Atendimento</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-sky">Atendimento</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/como-funciona" className="text-muted hover:text-primary">Como funciona</Link></li>
-            <li><Link to="/o-que-nao-atendemos" className="text-muted hover:text-primary">O que não atendemos</Link></li>
-            <li><Link to="/conteudo" className="text-muted hover:text-primary">Conteúdo</Link></li>
-            <li><Link to="/perguntas" className="text-muted hover:text-primary">Perguntas frequentes</Link></li>
+            <li><Link to="/como-funciona" className="text-muted no-underline hover:text-accent">Como funciona</Link></li>
+            <li><Link to="/o-que-nao-atendemos" className="text-muted no-underline hover:text-accent">O que não atendemos</Link></li>
+            <li><Link to="/conteudo" className="text-muted no-underline hover:text-accent">Conteúdo</Link></li>
+            <li><Link to="/perguntas" className="text-muted no-underline hover:text-accent">Perguntas frequentes</Link></li>
           </ul>
         </div>
         <div>
-          <p className="mb-3 text-sm font-semibold">Legal</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-sky">Legal</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/termos" className="text-muted hover:text-primary">Termos de uso</Link></li>
-            <li><Link to="/privacidade" className="text-muted hover:text-primary">Privacidade</Link></li>
-            <li><Link to="/tcle" className="text-muted hover:text-primary">Consentimento da telemedicina</Link></li>
-            <li><Link to="/cancelamento" className="text-muted hover:text-primary">Cancelamento e reembolso</Link></li>
-            <li><Link to="/transparencia" className="text-muted hover:text-primary">Transparência</Link></li>
+            <li><Link to="/termos" className="text-muted no-underline hover:text-accent">Termos de uso</Link></li>
+            <li><Link to="/privacidade" className="text-muted no-underline hover:text-accent">Privacidade</Link></li>
+            <li><Link to="/tcle" className="text-muted no-underline hover:text-accent">Consentimento da telemedicina</Link></li>
+            <li><Link to="/cancelamento" className="text-muted no-underline hover:text-accent">Cancelamento e reembolso</Link></li>
+            <li><Link to="/transparencia" className="text-muted no-underline hover:text-accent">Transparência</Link></li>
           </ul>
         </div>
       </Container>
@@ -142,8 +162,8 @@ function Footer() {
 function DemoBanner() {
   if (!isDemo) return null;
   return (
-    <div className="bg-accent/15 px-4 py-2 text-center text-sm text-ink">
-      <strong>Modo demonstração:</strong> dados fictícios em memória, nada é salvo. Código de login: <strong>123456</strong>.
+    <div className="bg-cream px-4 py-2 text-center text-sm text-ink">
+      <strong>Modo demonstração:</strong> dados fictícios em memória, nada é salvo. Crie uma conta com qualquer e-mail e senha.
     </div>
   );
 }

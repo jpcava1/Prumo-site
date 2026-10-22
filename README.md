@@ -16,7 +16,7 @@ Site da Prumo: o paciente escolhe o motivo, cria a conta, responde a triagem, ag
 | Funções de servidor | Cobrança no Asaas, webhook de pagamento, lembretes 24 h e 1 h, webhook da telemedicina (documentos), exportação de dados (LGPD) |
 | Testes | 79 testes: regras do banco e RLS, triagem, agenda, conta por consulta, LGPD, tela da receita e varredura de conformidade do texto |
 
-Sem as chaves do Supabase, o site sobe em **modo demonstração**: dados fictícios em memória, código de login `123456`, botões para simular pagamento e consulta. Serve para ver tudo funcionando antes de ligar o banco.
+Sem as chaves do Supabase, o site sobe em **modo demonstração**: dados fictícios em memória, crie uma conta com qualquer e-mail e senha, botões para simular pagamento, consulta e aprovação de profissional. Serve para ver tudo funcionando antes de ligar o banco.
 
 ## Passo a passo
 
@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Abra http://localhost:8080. No modo demonstração, entre com qualquer e-mail e o código `123456`. No painel (`/painel`) há um seletor para trocar de papel (paciente, equipe, médico, diretor técnico, admin).
+Abra http://localhost:8080. No modo demonstração, clique em "Login" e crie uma conta com qualquer e-mail e senha. No painel (`/painel`) há um seletor para trocar de papel (paciente, equipe, médico, diretor técnico, admin).
 
 ### 2. Subir no GitHub
 
@@ -73,7 +73,7 @@ supabase db push                  # cria tabelas, regras de acesso e buckets
 
 Depois, abra o **SQL Editor** do Supabase, cole o conteúdo de `supabase/seed.sql` e rode (cria as 4 linhas de cuidado com preço e a triagem v1).
 
-3. Em **Authentication → Providers → Email**: ative "Email OTP" (código de 6 dígitos) e edite o modelo do e-mail para mostrar `{{ .Token }}`.
+3. Em **Authentication → Providers → Email**: deixe o login por e-mail e senha ativo (senha mínima de 8 caracteres). Se ligar "Confirm email", a pessoa precisa clicar no link antes do primeiro login. Em **URL Configuration**, coloque o endereço do site para o link de "Esqueci minha senha".
 4. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (em Project Settings → API).
 5. Rode `npm run dev` de novo: o aviso de demonstração some.
 6. Crie seu usuário entrando no site e, no SQL Editor, torne-se admin:
@@ -89,10 +89,12 @@ Depois, pelo painel (`/painel/acessos`), dê os papéis `medical_director` ao di
 ```bash
 supabase secrets set ASAAS_API_KEY=... ASAAS_BASE_URL=https://sandbox.asaas.com/api/v3 ASAAS_WEBHOOK_TOKEN=... \
   CRON_SECRET=... TELEMED_WEBHOOK_SECRET=... SITE_URL=https://seudominio.com.br \
-  RESEND_API_KEY=... EMAIL_FROM="Prumo <consultas@seudominio.com.br>"
+  RESEND_API_KEY=... EMAIL_FROM="Prumo <consultas@seudominio.com.br>" \
+  COMPANY_LEGAL_NAME="Prumo Serviços Médicos Ltda." COMPANY_CNPJ="00.000.000/0001-00"
 
 supabase functions deploy create-payment
 supabase functions deploy export-my-data
+supabase functions deploy send-documents
 supabase functions deploy payment-webhook --no-verify-jwt
 supabase functions deploy send-reminders --no-verify-jwt
 supabase functions deploy telemed-webhook --no-verify-jwt
