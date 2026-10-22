@@ -98,7 +98,7 @@
     background:
       radial-gradient(70% 60% at 0% 80%, rgb(var(--lp-shade) / 0.55) 0%, transparent 70%),
       linear-gradient(180deg, rgb(var(--lp-shade) / 0.45) 0%, rgb(var(--lp-shade) / 0.08) 26%, transparent 40%,
-        transparent 58%, rgb(var(--lp-shade) / 0.55) 76%, rgb(var(--lp-shade) / 0.82) 100%);
+        transparent 58%, rgb(var(--lp-shade) / 0.55) 76%, rgb(var(--lp-shade) / 0.88) 94%, rgb(var(--lp-shade)) 100%);
   }
   .lp-hero-inner { position: relative; z-index: 1; width: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
   .lp-plumb { display: flex; flex-direction: column; align-items: center; margin: 0 0 max(36px, calc(50svh - 110px)); }
@@ -126,9 +126,13 @@
   }
 
   /* Tela 2: logo + três painéis com foto desfocada */
-  .lp-services { padding: 64px 1rem 88px; }
+  /* Degradê do fim da tela 1 (escuro da foto) até o verde-claro do site, ao longo de toda a tela 2. */
+  .lp-services {
+    padding: 64px 1rem 88px;
+    background: linear-gradient(180deg, rgb(var(--lp-shade)) 0%, rgb(var(--lp-shade) / 0.55) 30%, rgb(var(--lp-shade) / 0.18) 65%, rgb(var(--bg) / 0) 100%) rgb(var(--bg));
+  }
   .lp-services-head { display: flex; justify-content: center; margin-bottom: 44px; }
-  .lp-brand { width: min(300px, 100%); padding: 22px 26px 24px; border-radius: 14px; background: rgb(var(--lp-logo-plate)); }
+  .lp-brand { width: min(300px, 100%); }
   .lp-brand-art { position: relative; display: block; aspect-ratio: 920 / 268; }
   .lp-brand-line { position: absolute; top: 96.8%; left: 18.5%; width: 64.8%; height: 2px;
     background: linear-gradient(90deg, transparent, rgb(var(--lp-copper)) 18%, rgb(var(--lp-copper)) 82%, transparent); }
