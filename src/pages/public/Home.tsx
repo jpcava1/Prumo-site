@@ -36,7 +36,7 @@ export default function Home() {
       <LandingPanels />
 
       {/* Como funciona */}
-      <Section className="border-y border-border bg-white">
+      <Section className="border-y border-border bg-cream">
         <div className="mb-12 max-w-xl">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="text-3xl font-medium sm:text-[2.6rem]">Quatro passos, tudo online.</h2>

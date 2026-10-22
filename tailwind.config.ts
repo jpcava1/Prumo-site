@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 // Tokens da identidade verde da Prumo (logo oficial).
-// As cores vêm de variáveis CSS em src/index.css (site sempre em fundo branco).
+// As cores vêm de variáveis CSS em src/index.css (site sempre em fundo verde-claro).
 export default {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],

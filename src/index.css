@@ -4,11 +4,11 @@
 
 /* Tokens da Prumo em RGB, para opacidade no Tailwind. */
 :root {
-  --bg: 255 255 255;          /* #FFFFFF branco */
+  --bg: 234 242 232;          /* #EAF2E8 verde-claro (fundo do site) */
   --surface: 255 255 255;     /* #FFFFFF */
   /* Identidade verde da Prumo (logo oficial), em fundo branco. Os nomes cream/sky/deep
      vêm da versão anterior e foram mantidos para os componentes que já os usam. */
-  --cream: 241 244 238;       /* off-white esverdeado (faixas de destaque) */
+  --cream: 220 234 219;       /* #DCEADB verde-claro mais forte (faixas de destaque) */
   --ink: 31 42 36;            /* #1F2A24 */
   --muted: 94 107 100;        /* #5E6B64 */
   --primary: 47 93 80;        /* #2F5D50 verde-pinho */
@@ -19,7 +19,7 @@
   --deep-ink: 202 216 186;    /* #CAD8BA sálvia sobre o verde-escuro */
   --accent: 200 135 58;       /* #C8873A ocre, só detalhes */
   --accent-deep: 229 129 79;  /* #E5814F cobre do traço da logo */
-  --border: 227 224 214;      /* #E3E0D6 */
+  --border: 207 223 205;      /* #CFDFCD borda esverdeada */
   --danger: 179 38 30;        /* #B3261E */
   --success: 46 125 79;       /* #2E7D4F */
   /* Landing (página inicial) */
@@ -33,7 +33,7 @@
   color-scheme: light;
 }
 
-/* Site sempre em fundo branco (sem tema escuro), por decisão de marca. */
+/* Site sempre em fundo verde-claro (sem tema escuro), por decisão de marca. */
 
 @layer base {
   html { -webkit-text-size-adjust: 100%; }

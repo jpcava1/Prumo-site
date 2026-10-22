@@ -113,7 +113,7 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="mt-16 border-t-4 border-t-primary bg-white text-ink">
+    <footer className="mt-16 border-t-4 border-t-primary bg-cream text-ink">
       <Container className="grid gap-10 py-12 md:grid-cols-[1.3fr_1fr_1fr]">
         <div className="space-y-3">
           <Logo />
