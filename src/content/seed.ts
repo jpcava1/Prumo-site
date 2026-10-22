@@ -3,7 +3,7 @@ import { triageV1 } from "./triage/v1";
 import { validateDefinition } from "@/lib/triage/schema";
 
 /** Preços iniciais (briefing, seção 13). Editáveis depois no painel. */
-export const DEFAULT_PRICE_CENTS = 9990;
+export const DEFAULT_PRICE_CENTS = 19900;
 export const DEFAULT_RETURN_PRICE_CENTS = 6990;
 
 function sqlString(s: string): string {

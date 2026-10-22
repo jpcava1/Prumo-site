@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowUpRight, X } from "lucide-react";
 import { policy } from "@/config/site";
-import { formatBRL } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 /**
@@ -11,11 +10,12 @@ import { track } from "@/lib/analytics";
  * vai por estado da navegação, nunca pela URL.
  */
 
-export function LandingHero({ price }: { price: number | null }) {
+export function LandingHero() {
   return (
     <section className="lp-hero" aria-labelledby="lp-hero-title">
       <div className="lp-hero-bg" aria-hidden>
-        <img src="/img/hero-corrida.jpg" alt="" width={1664} height={2080} />
+        <img className="lp-hero-backdrop" src="/img/hero-corrida-fundo.jpg" alt="" />
+        <img className="lp-hero-photo" src="/img/hero-corrida.jpg" alt="" width={1664} height={2080} />
         <div className="lp-hero-blur lp-hero-blur-top" />
         <div className="lp-hero-blur lp-hero-blur-bottom" />
       </div>
@@ -36,7 +36,6 @@ export function LandingHero({ price }: { price: number | null }) {
           <p className="lp-facts">
             <span>Por vídeo</span>
             <span>Até {policy.consultMinutes} min</span>
-            {price && <span>A partir de {formatBRL(price)}</span>}
             <span>Energia e disposição · Dieta · Treino · Suplementação</span>
           </p>
           <div className="lp-actions">

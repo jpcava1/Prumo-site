@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Button, Card, Checkbox, Field, Input, Notice, Spinner } from "@/components/ui";
-import { EmailCodeLogin } from "@/components/EmailCodeLogin";
+import { PasswordLogin } from "@/components/PasswordLogin";
 import { useAuth } from "@/context/AuthContext";
 import { useFlow } from "@/context/FlowContext";
 import { api } from "@/lib/api";
@@ -62,7 +62,7 @@ export default function StepConta() {
         <h1 className="text-3xl font-semibold">Crie sua conta ou entre</h1>
         <p className="mt-2 text-muted">É por ela que você acessa a consulta e os documentos.</p>
         <Card className="mt-8">
-          <EmailCodeLogin onDone={() => refreshProfile()} />
+          <PasswordLogin audience="paciente" onDone={() => refreshProfile()} />
         </Card>
       </div>
     );

@@ -12,6 +12,16 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Área do profissional: quem tem cadastro de médico/nutricionista/personal trainer (ou papel de médico/diretor técnico). */
+export function RequireProfessional({ children }: { children: ReactNode }) {
+  const { profile, professional, loading } = useAuth();
+  if (loading) return <Spinner />;
+  if (!professional && !(profile && ["doctor", "medical_director"].includes(profile.role))) {
+    return <Navigate to="/profissional/cadastro" replace />;
+  }
+  return <>{children}</>;
+}
+
 export function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { profile, loading } = useAuth();
   if (loading) return <Spinner />;

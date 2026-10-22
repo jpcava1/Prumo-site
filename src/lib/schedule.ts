@@ -14,6 +14,15 @@ export interface AvailabilityRule {
   end_time: string;
 }
 
+/** Horário aberto pelo profissional em um dia específico (Brasília). */
+export interface DateAvailability {
+  professional_id: string;
+  /** "YYYY-MM-DD" */
+  day: string;
+  start_time: string;
+  end_time: string;
+}
+
 export interface BusyInterval {
   professional_id: string;
   starts_at: string;
@@ -48,6 +57,7 @@ export function toBrasiliaISO(y: number, m: number, d: number, hh: number, mm: n
 
 export function generateSlots(opts: {
   rules: AvailabilityRule[];
+  dateRules?: DateAvailability[];
   busy: BusyInterval[];
   from: Date;
   days: number;
@@ -61,11 +71,17 @@ export function generateSlots(opts: {
   const lead = opts.minLeadMinutes ?? 60;
   const earliest = now.getTime() + lead * MS_MIN;
   const out: Slot[] = [];
+  const seen = new Set<string>();
 
   for (let i = 0; i < days; i++) {
     const day = new Date(from.getTime() + i * 24 * 60 * MS_MIN);
     const p = brasiliaParts(day);
-    for (const r of rules.filter((x) => x.weekday === p.weekday)) {
+    const key = `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+    const blocks = [
+      ...rules.filter((x) => x.weekday === p.weekday),
+      ...(opts.dateRules ?? []).filter((x) => x.day === key),
+    ];
+    for (const r of blocks) {
       const [sh, sm] = r.start_time.split(":").map(Number);
       const [eh, em] = r.end_time.split(":").map(Number);
       for (let t = sh * 60 + sm; t + slotMin <= eh * 60 + em; t += slotMin) {
@@ -76,11 +92,28 @@ export function generateSlots(opts: {
         const clash = busy.some(
           (b) => b.professional_id === r.professional_id && start < new Date(b.ends_at).getTime() && end > new Date(b.starts_at).getTime(),
         );
-        if (!clash) out.push({ professional_id: r.professional_id, starts_at: iso });
+        const id = `${r.professional_id}|${iso}`;
+        if (!clash && !seen.has(id)) {
+          seen.add(id);
+          out.push({ professional_id: r.professional_id, starts_at: iso });
+        }
       }
     }
   }
   return out.sort((a, b) => a.starts_at.localeCompare(b.starts_at) || a.professional_id.localeCompare(b.professional_id));
+}
+
+/** Data de hoje em Brasília, "YYYY-MM-DD". */
+export function brasiliaToday(now: Date = new Date()): string {
+  const p = brasiliaParts(now);
+  return `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+}
+
+/** Soma dias a uma data "YYYY-MM-DD". */
+export function addDays(day: string, n: number): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Pode remarcar/cancelar sem custo? (até X horas antes) */

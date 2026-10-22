@@ -7,7 +7,7 @@ export default function HowItWorks() {
   return (
     <>
       <Section>
-        <PageTitle eyebrow="Como funciona" title="Uma consulta de verdade, do começo ao fim online.">
+        <PageTitle eyebrow="Como funciona" title="Do começo ao fim, online.">
           Você conta o que está acontecendo, escolhe o horário e conversa com um médico por vídeo. Os documentos ficam na sua conta.
         </PageTitle>
         <div className="mt-12 grid gap-10 md:grid-cols-[1fr_1fr]">
@@ -16,21 +16,15 @@ export default function HowItWorks() {
             <Card>
               <h2 className="text-xl font-semibold">Vou sair com uma receita?</h2>
               <p className="mt-2 text-muted">
-                Só se o médico entender que há indicação. Ele pode prescrever, orientar mudanças de hábito, pedir exames ou recomendar uma consulta
-                presencial. O valor da consulta é o mesmo em qualquer caso, e o médico recebe o mesmo valor também.
+                Só se o médico entender que há indicação. Ele também pode orientar, pedir exames ou encaminhar. O valor da consulta é o mesmo em
+                qualquer caso.
               </p>
             </Card>
             <Card>
               <h2 className="text-xl font-semibold">E se houver receita?</h2>
               <p className="mt-2 text-muted">
-                Ela sai no seu nome, em PDF com assinatura digital, e vale em qualquer farmácia do Brasil. Se preferir, a {pharmacyPartner.name}{" "}
-                recebe a receita pelo site dela, faz o orçamento e entrega em casa. Usar é opcional.
-              </p>
-            </Card>
-            <Card>
-              <h2 className="text-xl font-semibold">Quanto tempo leva?</h2>
-              <p className="mt-2 text-muted">
-                A triagem leva cerca de 5 minutos. A consulta dura até 30 minutos. Os documentos aparecem na sua conta logo depois.
+                Ela sai no seu nome, com assinatura digital, e vale em qualquer farmácia do Brasil. A {pharmacyPartner.name} é uma opção
+                integrada. Usar é opcional.
               </p>
             </Card>
           </div>

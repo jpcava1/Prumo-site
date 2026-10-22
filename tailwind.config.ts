@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
-// Tokens da rota visual "Prumo calmo" (briefing, seção 4).
-// As cores vêm de variáveis CSS em src/index.css, com versão clara e escura.
+// Tokens da identidade verde da Prumo (logo oficial).
+// As cores vêm de variáveis CSS em src/index.css (site sempre em fundo branco).
 export default {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -18,7 +18,16 @@ export default {
           soft: "rgb(var(--primary-soft) / <alpha-value>)",
           ink: "rgb(var(--primary-ink) / <alpha-value>)",
         },
-        accent: "rgb(var(--accent) / <alpha-value>)",
+        accent: {
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          deep: "rgb(var(--accent-deep) / <alpha-value>)",
+        },
+        cream: "rgb(var(--cream) / <alpha-value>)",
+        sky: "rgb(var(--sky) / <alpha-value>)",
+        deep: {
+          DEFAULT: "rgb(var(--deep) / <alpha-value>)",
+          ink: "rgb(var(--deep-ink) / <alpha-value>)",
+        },
         border: "rgb(var(--border) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
@@ -27,7 +36,7 @@ export default {
         display: ["Rethink Sans", "system-ui", "sans-serif"],
         sans: ["Rethink Sans", "system-ui", "sans-serif"],
       },
-      borderRadius: { card: "12px" },
+      borderRadius: { card: "16px" },
       maxWidth: { site: "1200px" },
     },
   },

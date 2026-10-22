@@ -5,9 +5,11 @@ import { api, isDemo, type Role } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /** Itens do painel por papel (briefing, seção 8). */
-export const PANEL_ITEMS: { to: string; label: string; roles: Role[] }[] = [
+export const PANEL_ITEMS: { to: string; label: string; roles: Role[]; professional?: boolean }[] = [
   { to: "/painel", label: "Agenda", roles: ["staff", "admin", "medical_director"] },
-  { to: "/painel/medico", label: "Minha agenda (médico)", roles: ["doctor", "medical_director"] },
+  { to: "/painel/horarios", label: "Meus horários", roles: ["doctor", "medical_director"], professional: true },
+  { to: "/painel/medico", label: "Agenda e atendimento", roles: ["doctor", "medical_director"], professional: true },
+  { to: "/painel/ativos", label: "Minha biblioteca", roles: ["doctor", "medical_director"], professional: true },
   { to: "/painel/profissionais", label: "Profissionais e horários", roles: ["admin", "staff"] },
   { to: "/painel/precos", label: "Linhas e preços", roles: ["admin"] },
   { to: "/painel/triagem", label: "Triagem (versões)", roles: ["medical_director"] },
@@ -42,14 +44,16 @@ function DemoRoleSwitcher() {
 }
 
 export default function PanelShell() {
-  const { profile } = useAuth();
-  const items = PANEL_ITEMS.filter((i) => profile && i.roles.includes(profile.role));
+  const { profile, professional } = useAuth();
+  const items = PANEL_ITEMS.filter((i) => (profile && i.roles.includes(profile.role)) || (i.professional && professional));
   return (
     <Container className="py-10">
       <DemoRoleSwitcher />
       <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
         <nav aria-label="Painel" className="flex gap-1 overflow-x-auto lg:flex-col">
-          <p className="hidden px-3 pb-2 text-sm text-muted lg:block">Painel · {profile?.role}</p>
+          <p className="hidden px-3 pb-2 text-sm text-muted lg:block">
+            {professional ? `${professional.full_name.split(" ")[0]} · ${professional.council} ${professional.council_number}/${professional.council_uf}` : `Painel · ${profile?.role}`}
+          </p>
           {items.map((i) => (
             <NavLink
               key={i.to}

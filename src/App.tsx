@@ -1,11 +1,10 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { SiteLayout } from "@/components/Layout";
-import { RequireAuth, RequireRole } from "@/components/Guards";
+import { RequireAuth, RequireProfessional, RequireRole } from "@/components/Guards";
 import { FlowProvider } from "@/context/FlowContext";
 import Home from "@/pages/public/Home";
 import HowItWorks from "@/pages/public/HowItWorks";
 import CareLinePage from "@/pages/public/CareLinePage";
-import Pricing from "@/pages/public/Pricing";
 import Doctors from "@/pages/public/Doctors";
 import Transparency from "@/pages/public/Transparency";
 import { ContentPage, FaqPage, NotFound, NotServed } from "@/pages/public/SimplePages";
@@ -21,7 +20,9 @@ import StepConfirmado from "@/pages/flow/StepConfirmado";
 import AccountShell from "@/pages/account/AccountShell";
 import { DocumentPage, Help, MyAppointments, MyData, MyDocuments, MyPayments } from "@/pages/account/AccountPages";
 import PanelShell from "@/pages/panel/PanelShell";
-import { PanelAccess, PanelAgenda, PanelDoctor, PanelPrices, PanelProfessionals, PanelReports, PanelTriage } from "@/pages/panel/PanelPages";
+import ProfessionalSignup from "@/pages/professional/ProfessionalSignup";
+import ProfessionalHours from "@/pages/professional/ProfessionalHours";
+import { PanelAccess, PanelActives, PanelAgenda, PanelDoctor, PanelPrices, PanelProfessionals, PanelReports, PanelTriage } from "@/pages/panel/PanelPages";
 
 export default function App() {
   return (
@@ -35,7 +36,8 @@ export default function App() {
           <Route path="dieta" element={<CareLinePage slug="dieta" />} />
           <Route path="treino" element={<CareLinePage slug="treino" />} />
           <Route path="suplementacao" element={<CareLinePage slug="suplementacao" />} />
-          <Route path="preco" element={<Pricing />} />
+          {/* O valor aparece só no pagamento, depois da triagem e do horário. */}
+          <Route path="preco" element={<Navigate to="/como-funciona" replace />} />
           <Route path="medicos" element={<Doctors />} />
           <Route path="transparencia" element={<Transparency />} />
           <Route path="o-que-nao-atendemos" element={<NotServed />} />
@@ -46,6 +48,14 @@ export default function App() {
           <Route path="tcle" element={<Tcle />} />
           <Route path="cancelamento" element={<Cancellation />} />
           <Route path="entrar" element={<Entrar />} />
+          <Route
+            path="profissional/cadastro"
+            element={
+              <RequireAuth>
+                <ProfessionalSignup />
+              </RequireAuth>
+            }
+          />
 
           {/* Fluxo de agendamento */}
           <Route path="comecar" element={<FlowShell />}>
@@ -84,7 +94,9 @@ export default function App() {
             }
           >
             <Route index element={<RequireRole roles={["staff", "admin", "medical_director"]}><PanelAgenda /></RequireRole>} />
-            <Route path="medico" element={<RequireRole roles={["doctor", "medical_director"]}><PanelDoctor /></RequireRole>} />
+            <Route path="horarios" element={<RequireProfessional><ProfessionalHours /></RequireProfessional>} />
+            <Route path="medico" element={<RequireProfessional><PanelDoctor /></RequireProfessional>} />
+            <Route path="ativos" element={<RequireProfessional><PanelActives /></RequireProfessional>} />
             <Route path="profissionais" element={<RequireRole roles={["admin", "staff"]}><PanelProfessionals /></RequireRole>} />
             <Route path="precos" element={<RequireRole roles={["admin"]}><PanelPrices /></RequireRole>} />
             <Route path="triagem" element={<RequireRole roles={["medical_director"]}><PanelTriage /></RequireRole>} />
