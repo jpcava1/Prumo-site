@@ -29,7 +29,7 @@
   --lp-logo-ink: 202 216 186;   /* verde-sálvia das letras da logo */
   --lp-logo-plate: 12 25 18;    /* verde-escuro do fundo da logo */
   --lp-glass: 244 246 242;      /* véu dos painéis */
-  --lp-glass-a: 0.66;
+  --lp-glass-a: 0.55;
   color-scheme: light;
 }
 
@@ -140,8 +140,8 @@
     border: 1px solid rgb(255 255 255 / .5); transition: transform .35s cubic-bezier(.2,.7,.2,1);
   }
   .lp-card::before, .lp-card::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-  .lp-card::before { inset: -24px; background: var(--img) var(--pos, center) / cover no-repeat; filter: blur(7px) saturate(.9); transform: scale(1.04); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
-  .lp-card::after { background: linear-gradient(180deg, rgb(var(--lp-glass) / var(--lp-glass-a)) 0%, rgb(var(--lp-glass) / calc(var(--lp-glass-a) * .75)) 45%, rgb(var(--lp-glass) / var(--lp-glass-a)) 100%); }
+  .lp-card::before { inset: -24px; background: var(--img) var(--pos, center) / cover no-repeat; filter: blur(3px) saturate(.95); transform: scale(1.04); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+  .lp-card::after { background: linear-gradient(180deg, rgb(var(--lp-glass) / var(--lp-glass-a)) 0%, rgb(var(--lp-glass) / calc(var(--lp-glass-a) * .6)) 45%, rgb(var(--lp-glass) / var(--lp-glass-a)) 100%); }
   .lp-card:hover { transform: translateY(-6px); }
   .lp-card:hover::before { transform: scale(1.09); }
   .lp-chip { font-size: 11px; line-height: 1.3; letter-spacing: .14em; text-transform: uppercase; padding: 8px 14px; border-radius: 8px; background: rgb(var(--surface) / .75); color: rgb(var(--muted)); }
