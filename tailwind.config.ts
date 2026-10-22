@@ -24,8 +24,8 @@ export default {
         success: "rgb(var(--success) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["Fraunces", "Georgia", "serif"],
-        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Rethink Sans", "system-ui", "sans-serif"],
+        sans: ["Rethink Sans", "system-ui", "sans-serif"],
       },
       borderRadius: { card: "12px" },
       maxWidth: { site: "1200px" },

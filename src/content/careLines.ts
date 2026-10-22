@@ -3,7 +3,7 @@
  * REGRA: nenhum nome de remédio, ativo, fórmula ou dose. Nenhuma promessa de resultado.
  * Preço e status reais vêm da tabela care_lines (editável no painel); aqui ficam só os textos.
  */
-export type CareLineSlug = "cabelo" | "pele" | "sono-e-energia" | "suplementacao";
+export type CareLineSlug = "energia-e-disposicao" | "dieta" | "treino" | "suplementacao";
 
 export interface CareLineContent {
   slug: CareLineSlug;
@@ -17,63 +17,17 @@ export interface CareLineContent {
 }
 
 export const careLineContent: Record<CareLineSlug, CareLineContent> = {
-  cabelo: {
-    slug: "cabelo",
-    name: "Cabelo",
-    short: "Queda, falhas ou fios mais finos",
-    heroTitle: "Queda de cabelo merece uma avaliação de verdade.",
+  "energia-e-disposicao": {
+    slug: "energia-e-disposicao",
+    name: "Energia e disposição",
+    short: "Cansaço, sono ruim e falta de pique",
+    heroTitle: "Viver cansado não precisa ser o normal.",
     heroText:
-      "Um médico entende o seu padrão de queda, o seu histórico e o que você já tentou. Consulta por vídeo de até 30 minutos.",
+      "Um médico investiga com você sono, rotina, alimentação e sinais que merecem atenção, e orienta os próximos passos.",
     forWho: [
-      "Quem percebeu mais fios no travesseiro, no banho ou na escova",
-      "Quem notou entradas, falhas ou o couro cabeludo mais aparente",
-      "Quem já tentou algo por conta própria e quer uma orientação médica",
-    ],
-    doctorLooksAt: [
-      "Há quanto tempo e onde a queda aparece",
-      "Histórico familiar e de saúde",
-      "Fotos do couro cabeludo, se você quiser enviar",
-      "Se é caso para exame ou avaliação presencial",
-    ],
-    faq: [
-      { q: "Preciso enviar fotos?", a: "Não é obrigatório, mas ajuda o médico a entender o seu caso. As fotos ficam guardadas com segurança e só ele vê." },
-      { q: "Em quanto tempo vejo resultado?", a: "Depende da causa e da conduta. O médico conversa com você sobre expectativas realistas e sobre quando fazer um retorno." },
-    ],
-  },
-  pele: {
-    slug: "pele",
-    name: "Pele",
-    short: "Manchas, oleosidade e sinais do tempo",
-    heroTitle: "Cuidar da pele começa por entender a sua pele.",
-    heroText:
-      "Manchas, oleosidade ou sinais do tempo: um médico avalia o seu caso por vídeo e monta com você um plano de cuidado.",
-    forWho: [
-      "Quem tem manchas que incomodam",
-      "Quem sofre com oleosidade ou espinhas leves",
-      "Quem quer uma rotina de cuidado orientada por um médico",
-    ],
-    doctorLooksAt: [
-      "Sua queixa principal e há quanto tempo ela existe",
-      "Exposição ao sol e o que você usa hoje",
-      "Fotos da pele, se você quiser enviar",
-      "Se alguma lesão precisa de avaliação presencial",
-    ],
-    faq: [
-      { q: "Vocês atendem acne grave?", a: "Casos que exigem tratamento com remédio controlado ou acompanhamento presencial são encaminhados. O médico orienta o melhor caminho." },
-      { q: "E se eu tiver uma pinta que mudou?", a: "Pinta que cresce, muda de cor ou sangra precisa de exame presencial com dermatologista. A triagem avisa o médico, e ele orienta você." },
-    ],
-  },
-  "sono-e-energia": {
-    slug: "sono-e-energia",
-    name: "Sono e energia",
-    short: "Dormir mal, cansaço e falta de disposição",
-    heroTitle: "Dormir mal e acordar cansado não precisa ser normal.",
-    heroText:
-      "Um médico investiga com você hábitos, rotina e sinais que merecem atenção, e orienta os próximos passos.",
-    forWho: [
-      "Quem demora para dormir ou acorda várias vezes",
       "Quem acorda cansado mesmo dormindo muitas horas",
-      "Quem sente falta de energia no dia a dia",
+      "Quem sente falta de energia ao longo do dia",
+      "Quem demora para dormir ou acorda várias vezes",
     ],
     doctorLooksAt: [
       "Sua rotina de sono e de trabalho",
@@ -83,13 +37,61 @@ export const careLineContent: Record<CareLineSlug, CareLineContent> = {
     ],
     faq: [
       { q: "Vocês receitam remédio para dormir controlado?", a: "Não. Remédios controlados não podem ser dispensados a distância. Se for o caso, o médico encaminha você para acompanhamento presencial." },
-      { q: "Posso ter apneia do sono?", a: "A triagem pergunta sobre ronco e pausas na respiração. Se houver sinais, o médico orienta o exame adequado." },
+      { q: "O cansaço pode ser algo no sangue?", a: "Pode. Se o médico achar necessário, ele pede exames e avalia o resultado com você num retorno." },
+    ],
+  },
+  dieta: {
+    slug: "dieta",
+    name: "Dieta",
+    short: "Alimentação que cabe na sua rotina",
+    heroTitle: "Comer bem começa por entender como você come hoje.",
+    heroText:
+      "Um nutricionista avalia sua alimentação, sua rotina e seus exames e monta com você um plano alimentar que cabe no seu dia.",
+    forWho: [
+      "Quem quer organizar a alimentação do dia a dia",
+      "Quem tem alimentação vegetariana ou vegana",
+      "Quem quer alinhar a alimentação com a rotina de treino",
+    ],
+    doctorLooksAt: [
+      "O que você come num dia normal",
+      "Horários, fome e o que atrapalha a sua rotina",
+      "Exames dos últimos 6 meses, se você tiver",
+      "Se algum sinal pede avaliação médica",
+    ],
+    faq: [
+      { q: "Vocês fazem tratamento para emagrecer com remédio?", a: "Não. Emagrecimento com remédio, incluindo canetas, fica fora do nosso atendimento." },
+      { q: "Vou receber um cardápio?", a: "Sim. O nutricionista monta o seu plano alimentar, que fica na sua área do paciente." },
+      { q: "Quem atende?", a: "Nutricionista com registro ativo no CRN. Você vê o nome e o número antes de agendar." },
+    ],
+  },
+  treino: {
+    slug: "treino",
+    name: "Treino",
+    short: "Treino personalizado com personal trainer",
+    heroTitle: "Um treino feito para a sua rotina.",
+    heroText:
+      "Um personal trainer entende seus objetivos, sua rotina e suas limitações e monta um treino personalizado para você.",
+    forWho: [
+      "Quem quer começar a treinar e não sabe por onde",
+      "Quem já treina e quer ajustar rotina, sono e alimentação",
+      "Quem quer saber se está tudo bem para aumentar o ritmo",
+    ],
+    doctorLooksAt: [
+      "Sua atividade física hoje e seus objetivos",
+      "Sintomas durante o esforço, como dor no peito ou falta de ar",
+      "Lesões e dores que atrapalham o treino",
+      "Quanto tempo e quais equipamentos você tem",
+    ],
+    faq: [
+      { q: "Vou receber a planilha de treino?", a: "Sim. O personal trainer monta o seu treino personalizado, que fica na sua área do paciente." },
+      { q: "Quem atende?", a: "Profissional de educação física com registro ativo no CREF. Ele não receita remédio nem suplemento." },
+      { q: "E se eu sentir dor no peito ou falta de ar ao treinar?", a: "A triagem pergunta sobre isso. Se houver sinal de alerta, você é orientado a passar por um médico antes de começar." },
     ],
   },
   suplementacao: {
     slug: "suplementacao",
     name: "Suplementação",
-    short: "Vitaminas, minerais e rotina de treino",
+    short: "Vitaminas e minerais, com critério",
     heroTitle: "Suplementar com critério, não por moda.",
     heroText:
       "Um médico avalia sua alimentação, rotina, objetivos e exames recentes antes de qualquer indicação.",
@@ -111,7 +113,7 @@ export const careLineContent: Record<CareLineSlug, CareLineContent> = {
   },
 };
 
-export const launchSlugs: CareLineSlug[] = ["cabelo", "pele", "sono-e-energia", "suplementacao"];
+export const launchSlugs: CareLineSlug[] = ["energia-e-disposicao", "dieta", "treino", "suplementacao"];
 
 export const notServed = [
   "Urgências e emergências (ligue 192)",

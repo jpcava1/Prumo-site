@@ -5,7 +5,7 @@
  *   sem linha de cuidado, sem resposta, sem nada de saúde.
  */
 
-export const AD_PIXEL_ALLOWED_PATHS = ["/", "/como-funciona", "/preco", "/cabelo", "/pele", "/sono-e-energia", "/suplementacao", "/medicos", "/perguntas"];
+export const AD_PIXEL_ALLOWED_PATHS = ["/", "/como-funciona", "/preco", "/energia-e-disposicao", "/dieta", "/treino", "/suplementacao", "/medicos", "/perguntas"];
 
 const PRIVATE_PREFIXES = ["/comecar", "/minha-conta", "/painel", "/entrar"];
 
@@ -29,7 +29,7 @@ export type FunnelEvent =
   | "fluxo_etapa_pagamento"
   | "fluxo_concluido";
 
-const HEALTH_KEYS = /linha|care|triag|resposta|answer|sintoma|alerta|receita|cabelo|pele|sono|suplement/i;
+const HEALTH_KEYS = /linha|care|triag|resposta|answer|sintoma|alerta|receita|energia|disposic|dieta|treino|sono|suplement/i;
 
 export function sanitizeProps(props: Record<string, string | number | boolean> = {}): Record<string, string | number | boolean> {
   return Object.fromEntries(Object.entries(props).filter(([k, v]) => !HEALTH_KEYS.test(k) && !HEALTH_KEYS.test(String(v))));

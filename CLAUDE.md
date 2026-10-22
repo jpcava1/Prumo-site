@@ -12,7 +12,7 @@ Briefing completo: `docs/BRIEFING.md`.
 4. **Médico pago por consulta realizada × valor fixo.** Nenhuma tabela, coluna, view ou relatório liga pagamento de profissional a receita, documento ou farmácia.
 5. **Dado de saúde** nunca em URL, título, log, analytics, pixel, e-mail de marketing ou template de WhatsApp. Motivo da consulta passa por estado da navegação, não por query string.
 6. **RLS em todas as tabelas.** Staff e admin não leem `triage_responses` nem `clinical_documents`. Médico lê triagem só pela função `get_triage_for_appointment` (que audita).
-7. **Quem prescreve:** só profissional com CRM (medicamento) ou CRN (suplemento). Nunca farmacêutico da Farmashop, biomédico ou estudante.
+7. **Quem prescreve:** só profissional com CRM (medicamento) ou CRN (suplemento). Nunca farmacêutico da Farmashop, biomédico ou estudante. Personal trainer (CREF) atende só a linha Treino e entrega plano de treino (documento de orientação); nunca receita nem pedido de exame (trava `check_document_author` no banco).
 8. **Copy:** sem promessa de resultado, sem antes/depois de tratamento, sem foto de cápsula/pote/frasco. Preço da consulta pode aparecer (Res. CFM 2.336/2023). Especialidade só com RQE.
 9. **Menores de 18 anos e sinais de urgência** bloqueiam o fluxo (com SAMU 192).
 

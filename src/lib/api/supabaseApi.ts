@@ -42,7 +42,7 @@ function must<T>(res: { data: T | null; error: { message?: string } | null }): T
 }
 
 const PROFESSIONAL_PUBLIC_COLUMNS =
-  "id, user_id, kind, full_name, council, council_number, council_uf, rqe, specialty, photo_url, bio, active";
+  "id, user_id, kind, full_name, council, council_number, council_uf, rqe, specialty, photo_url, bio, care_lines, active";
 
 export function createSupabaseApi(url: string, anonKey: string): Api {
   const sb: SupabaseClient = createClient(url, anonKey, {

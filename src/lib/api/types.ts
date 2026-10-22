@@ -33,15 +33,17 @@ export interface CareLine {
 export interface Professional {
   id: string;
   user_id: string | null;
-  kind: "medico" | "nutricionista";
+  kind: "medico" | "nutricionista" | "educador_fisico";
   full_name: string;
-  council: "CRM" | "CRN";
+  council: "CRM" | "CRN" | "CREF";
   council_number: string;
   council_uf: string;
   rqe: string | null;
   specialty: string | null;
   photo_url: string | null;
   bio: string | null;
+  /** Linhas que o profissional atende. Vazio = todas as linhas ativas. */
+  care_lines: string[];
   active: boolean;
 }
 

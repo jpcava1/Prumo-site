@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BadgeCheck, FileSignature, ShieldCheck, Store } from "lucide-react";
 import { ButtonLink, Card, Eyebrow, Section } from "@/components/ui";
+import { LandingHero, LandingPanels } from "@/components/Landing";
 import { careLineContent, launchSlugs } from "@/content/careLines";
 import { faq } from "@/content/faq";
 import { pharmacyPartner } from "@/config/site";
-import { formatBRL } from "@/lib/utils";
 import { lowestPrice, useCareLines, useProfessionals } from "@/hooks/useData";
-import { track } from "@/lib/analytics";
 import { DoctorCard } from "./Doctors";
 
 export const steps = [
@@ -38,36 +37,9 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-site gap-10 px-4 pb-16 pt-12 sm:px-6 md:grid-cols-[1.25fr_1fr] md:pb-24 md:pt-20">
-          <div>
-            <Eyebrow>Consulta online com médico</Eyebrow>
-            <h1 className="text-[2.35rem] font-semibold leading-[1.08] sm:text-6xl">
-              Cabelo, pele, sono e energia: fale com um médico sem sair de casa.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted">
-              Consulta por vídeo de até 30 minutos, com médico de nome e CRM na tela. Se houver indicação, a receita é sua e você escolhe a farmácia.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <ButtonLink to="/comecar" size="lg" onClick={() => track("comecar_click")}>
-                Começar <ArrowRight className="h-5 w-5" aria-hidden />
-              </ButtonLink>
-              <ButtonLink to="/como-funciona" size="lg" variant="ghost">
-                Ver como funciona
-              </ButtonLink>
-            </div>
-            {price && <p className="mt-4 text-sm text-muted">Consulta a partir de {formatBRL(price)} · Pix ou cartão</p>}
-          </div>
-
-          <Card className="self-start md:mt-6">
-            <p className="text-sm font-medium text-muted">Como funciona</p>
-            <div className="mt-5">
-              <StepsLine />
-            </div>
-          </Card>
-        </div>
-      </section>
+      {/* Tela 1 e tela 2 da landing */}
+      <LandingHero price={price} />
+      <LandingPanels />
 
       {/* Linhas de cuidado */}
       <Section className="bg-surface">
@@ -128,7 +100,7 @@ export default function Home() {
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
               <Eyebrow>Quem atende</Eyebrow>
-              <h2 className="text-3xl font-semibold sm:text-4xl">Nossos médicos</h2>
+              <h2 className="text-3xl font-semibold sm:text-4xl">Nossos profissionais</h2>
             </div>
             <Link to="/medicos" className="hidden text-sm font-medium sm:block">
               Ver todos
@@ -148,7 +120,7 @@ export default function Home() {
           <Card className="bg-primary-soft/40">
             <h3 className="text-2xl font-semibold">Para quem é</h3>
             <p className="mt-3 text-ink/90">
-              Adultos que querem avaliar queda de cabelo, pele, sono, energia ou suplementação com um médico, sem fila e sem sair de casa.
+              Adultos que querem cuidar de energia e disposição, dieta, treino ou suplementação com médico, nutricionista ou personal trainer, sem fila e sem sair de casa.
             </p>
           </Card>
           <Card>

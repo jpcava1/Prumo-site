@@ -3,6 +3,8 @@ import { Card, Notice, PageTitle, Section, Spinner } from "@/components/ui";
 import { useProfessionals } from "@/hooks/useData";
 import type { Professional } from "@/lib/api";
 
+const kindLabel: Record<Professional["kind"], string> = { medico: "Médico(a)", nutricionista: "Nutricionista", educador_fisico: "Personal trainer" };
+
 export function DoctorCard({ p, compact = false }: { p: Professional; compact?: boolean }) {
   return (
     <Card className={compact ? "p-4" : undefined}>
@@ -17,7 +19,7 @@ export function DoctorCard({ p, compact = false }: { p: Professional; compact?: 
         <div>
           <p className="font-semibold">{p.full_name}</p>
           <p className="text-sm text-muted">
-            {p.council} {p.council_number}/{p.council_uf}
+            {kindLabel[p.kind]} · {p.council} {p.council_number}/{p.council_uf}
             {p.rqe ? ` · RQE ${p.rqe}` : ""}
           </p>
           {/* Especialidade só aparece com RQE (Res. CFM 2.336/2023). */}
@@ -33,8 +35,8 @@ export default function Doctors() {
   const { data, loading, error } = useProfessionals();
   return (
     <Section>
-      <PageTitle eyebrow="Quem atende" title="Nossos médicos">
-        Todos têm registro ativo no Conselho Regional de Medicina. O número aparece aqui e na tela da agenda, antes de você escolher o horário.
+      <PageTitle eyebrow="Quem atende" title="Nossos profissionais">
+        Médicos (CRM), nutricionistas (CRN) e personal trainers (CREF), todos com registro ativo no conselho. O número aparece aqui e na tela da agenda, antes de você escolher o horário.
       </PageTitle>
       <div className="mt-10">
         {loading && <Spinner />}
@@ -43,7 +45,7 @@ export default function Doctors() {
           {data?.map((p) => <DoctorCard key={p.id} p={p} />)}
         </div>
         <p className="mt-8 text-sm text-muted">
-          Confira qualquer registro no portal do Conselho Federal de Medicina (busca de médicos). Especialidade só é anunciada com RQE, como exige o CFM.
+          Confira qualquer registro no portal do conselho de cada profissão (CFM, CFN ou CONFEF). Especialidade médica só é anunciada com RQE, como exige o CFM.
         </p>
       </div>
     </Section>

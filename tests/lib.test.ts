@@ -76,11 +76,11 @@ describe("analytics e LGPD", () => {
     expect(adPixelsAllowed("/", true)).toBe(true);
   });
   it("remove qualquer propriedade com cara de dado de saúde", () => {
-    expect(sanitizeProps({ etapa: 3, linha: "cabelo", origem: "instagram", valor: "pele" })).toEqual({ etapa: 3, origem: "instagram" });
+    expect(sanitizeProps({ etapa: 3, linha: "dieta", origem: "instagram", valor: "treino" })).toEqual({ etapa: 3, origem: "instagram" });
   });
   it("o convite de agenda não cita motivo da consulta", () => {
     const ics = buildIcs({ id: "a", startsAt: "2026-10-20T10:00:00-03:00", endsAt: "2026-10-20T10:30:00-03:00", url: "https://x/minha-conta" });
     expect(ics).toContain("SUMMARY:Consulta Prumo");
-    expect(ics).not.toMatch(/cabelo|pele|sono|suplement/i);
+    expect(ics).not.toMatch(/energia|dieta|treino|sono|suplement/i);
   });
 });

@@ -1,6 +1,8 @@
 # Prumo — Briefing do site (consulta online + fórmula manipulada)
 
-Oct 19, 2026 · @João
+Oct 19, 2026 · @João · atualizado em 22/10/2026 (linhas de cuidado e equipe)
+
+> **Atualização 22/10/2026.** Linhas de cuidado: **Energia e disposição, Dieta, Treino e Suplementação** (Cabelo e Pele saíram). Equipe: médicos (CRM), nutricionistas (CRN, linha Dieta) e personal trainers (CREF, linha Treino, com treino personalizado). Personal trainer não emite receita nem pedido de exame (trava no banco). Chamada da home: "Marque sua consulta".
 
 ## 1. Resumo e decisões
 
@@ -48,13 +50,13 @@ Cada regra do modelo precisa existir no código, não só no contrato. Esta tabe
 
 O nome segue **Prumo** ("Sua saúde no prumo"), escolhido no Business Plan v4, ainda sem depósito no INPI (classes 44, 35, 42 e 9) nem domínio registrado. Fazer as duas coisas antes de comprar mídia; até lá, o site sobe em subdomínio de teste.
 
-**Posicionamento.** Para adultos de 25 a 55 anos que querem resolver cabelo, pele, sono ou suplementação sem fila, a Prumo é a clínica online que faz consulta de verdade com médico identificado, porque o nome e o CRM estão na tela, a receita é do paciente e a farmácia tem endereço e farmacêutico.
+**Posicionamento.** Para adultos de 25 a 55 anos que querem cuidar de energia e disposição, dieta, treino ou suplementação sem fila, a Prumo é a clínica online que faz consulta de verdade com profissional identificado (médico, nutricionista ou personal trainer), porque o nome e o registro no conselho estão na tela, a receita é do paciente e a farmácia tem endereço e farmacêutico.
 
 **Personalidade:** clara, calma, adulta. **Não é:** milagrosa, "biohacker", vendedora de pote.
 
 | Certo | Errado |
 | --- | --- |
-| "Um médico avalia o seu caso em até 30 minutos." | "Acabe com a queda de cabelo em 30 dias." |
+| "Um médico avalia o seu caso em até 30 minutos." | "Tenha energia de sobra em 30 dias." |
 | "Se houver indicação, você recebe a receita e escolhe a farmácia." | "Receba sua fórmula exclusiva em casa." |
 | "Nem toda consulta termina em receita. Isso é um bom sinal." | "Tratamento garantido." |
 
@@ -90,9 +92,9 @@ São 13 páginas públicas, o fluxo de 6 telas e duas áreas logadas. Rotas em p
 
 | Página | Rota | Objetivo | Blocos principais |
 | --- | --- | --- | --- |
-| Início | `/` | Levar ao "Começar" | Hero, como funciona (4 passos), linhas de cuidado, médicos, preço da consulta, transparência, FAQ curto, CTA final |
+| Início | `/` | Levar ao "Começar" | Hero com foto e "Marque sua consulta", três painéis com pop-up (Consulta, Suplemento sob medida, Rotina de autocuidado), linhas de cuidado, profissionais, preço da consulta, transparência, FAQ curto, CTA final |
 | Como funciona | `/como-funciona` | Tirar a dúvida "vou sair com receita?" | Jornada completa, o que o médico pode decidir, livre escolha da farmácia |
-| Linha de cuidado (4 páginas) | `/cabelo`, `/pele`, `/sono-e-energia`, `/suplementacao` | Página de entrada para anúncio de cada tema | Para quem é, como é a consulta, o que o médico avalia, FAQ do tema, CTA. Sem nome de ativo. |
+| Linha de cuidado (4 páginas) | `/energia-e-disposicao`, `/dieta`, `/treino`, `/suplementacao` | Página de entrada para anúncio de cada tema | Para quem é, como é a consulta, o que o profissional avalia, FAQ do tema, CTA. Sem nome de ativo. |
 | Preço | `/preco` | Mostrar o valor da consulta e do retorno | Consulta, retorno, o que está incluído, política de cancelamento |
 | Médicos | `/medicos` | Confiança | Foto, nome, CRM/UF, RQE quando houver, formação |
 | Transparência | `/transparencia` | Diferencial regulatório | CNPJ da Prumo, registro no CRM-PR, diretor técnico, como a receita funciona, farmácias, encarregado de dados |
@@ -112,10 +114,10 @@ São 13 páginas públicas, o fluxo de 6 telas e duas áreas logadas. Rotas em p
 Do clique em "Começar" até o retorno são 12 passos; a meta é concluir os passos 1 a 7 em menos de 6 minutos no celular. A conta é criada antes da triagem porque o consentimento para dado de saúde precisa vir antes da coleta (LGPD, art. 11).
 
 1. **Início → "Começar".** Botão fixo no rodapé do celular. Leva a `/comecar`.
-2. **Motivo da consulta.** Quatro cartões: Cabelo, Pele, Sono e energia, Suplementação. Link discreto "Não encontrou seu caso?" para `/o-que-nao-atendemos`.
+2. **Motivo da consulta.** Quatro cartões: Energia e disposição, Dieta, Treino, Suplementação. Link discreto "Não encontrou seu caso?" para `/o-que-nao-atendemos`.
 3. **Conta e consentimentos.** E-mail com código de 6 dígitos (sem senha), celular, nome completo, CPF e data de nascimento. Três caixas separadas e obrigatórias: Termos de uso, Política de privacidade e "Autorizo o uso dos meus dados de saúde para o meu atendimento". Cada aceite grava versão, data, hora e IP.
 4. **Elegibilidade.** Idade calculada pelo nascimento (menor de 18: bloqueio com mensagem gentil). Pergunta de sinais de urgência (seção 7): se marcar algum, a tela para e mostra SAMU 192 e o pronto-socorro mais próximo; nada é agendado.
-5. **Triagem.** Perguntas comuns e da linha escolhida, uma por tela, barra de progresso, botão voltar e rascunho salvo a cada resposta. Fotos opcionais em cabelo e pele. No fim: "Pronto. Suas respostas vão para o médico antes da consulta." Nenhum resultado, nota ou sugestão.
+5. **Triagem.** Perguntas comuns e da linha escolhida, uma por tela, barra de progresso, botão voltar e rascunho salvo a cada resposta. Exames em PDF opcionais em Dieta e Suplementação. No fim: "Pronto. Suas respostas vão para o profissional antes da consulta." Nenhum resultado, nota ou sugestão.
 6. **Agenda.** Próximos 14 dias em horários de 30 minutos, no fuso de Brasília, mostrando o profissional com foto, nome e CRM/UF. Opção "primeiro horário disponível". O horário fica reservado por 15 minutos.
 7. **Pagamento.** Resumo (linha, data, médico, valor), aceite do TCLE da telemedicina e da política de cancelamento, Pix ou cartão em até 3x. Pix expira junto com a reserva. Cobrança só da consulta, em nome da Prumo.
 8. **Confirmação.** Data, hora, como entrar e botão "Adicionar à agenda" (.ics). Lembretes por e-mail e WhatsApp 24 h e 1 h antes, sem citar o motivo da consulta.
@@ -141,10 +143,11 @@ A triagem é uma **anamnese para o médico ler antes da consulta**, não um ques
 
 | Linha | Status | Observação |
 | --- | --- | --- |
-| Cabelo (queda) | Lançamento | Fotos opcionais de 3 ângulos |
-| Pele (manchas, oleosidade, envelhecimento) | Lançamento | Fotos opcionais; isotretinoína oral fora (receita retida, lista C2) |
-| Sono e energia | Lançamento | Sem hipnóticos controlados |
-| Suplementação | Lançamento | Exames recentes em PDF são opcionais |
+| Energia e disposição | Lançamento | Médico (CRM); sem hipnóticos controlados |
+| Dieta | Lançamento | Nutricionista (CRN); plano alimentar; emagrecimento com remédio fica fora |
+| Treino | Lançamento | Personal trainer (CREF); treino personalizado; sem receita nem pedido de exame |
+| Suplementação | Lançamento | Médico (CRM) ou nutricionista (CRN); exames recentes em PDF são opcionais |
+| Cabelo, Pele | Retiradas em 22/10/2026 | — |
 | Saúde sexual masculina | Fase 2 | Exige urologista; tema muito fiscalizado em anúncios |
 | Mulher 40+ | Fase 2 | Exige ginecologista |
 | Emagrecimento com medicamento, saúde mental, hormônios para estética ou desempenho, injetáveis | Fora | Página "O que não atendemos" |
@@ -163,9 +166,9 @@ A triagem é uma **anamnese para o médico ler antes da consulta**, não um ques
 
 **Bloco por linha (exemplos para o desenvolvedor; o médico diretor técnico aprova a versão final)**
 
-- **Cabelo:** há quanto tempo percebe a queda; onde (entradas, topo, difusa, falhas redondas); alguém da família tem calvície; coceira, descamação ou feridas no couro cabeludo; já tratou antes e com o quê (texto livre); fotos.
-- **Pele:** queixa principal; há quanto tempo; usa protetor solar todo dia; usa ácidos ou cremes hoje (texto livre); tem pinta ou mancha que mudou de cor, cresceu ou sangra (sim vira alerta "avaliação presencial recomendada"); fotos.
-- **Sono e energia:** horas de sono por noite; demora para dormir ou acorda à noite; alguém já disse que você ronca alto ou para de respirar dormindo; consumo de café e álcool; nas últimas duas semanas, sentiu-se para baixo ou sem esperança na maior parte dos dias.
+- **Dieta:** objetivo (organizar, energia, treino, outro); padrão alimentar (onívoro, vegetariano, vegano); refeições por dia; perda de controle ao comer ou medo de engordar a ponto de evitar comer (sim vira alerta "possível transtorno alimentar"); exames dos últimos 6 meses (upload opcional).
+- **Treino:** dias de atividade física por semana; objetivo (começar, condicionamento, força, outro); sinais durante o esforço: dor no peito, falta de ar fora do normal, tontura ou desmaio, coração disparado (qualquer um vira alerta "avaliar antes de liberar treino"); lesões ou dores (texto livre).
+- **Energia e disposição:** horas de sono por noite; demora para dormir ou acorda à noite; alguém já disse que você ronca alto ou para de respirar dormindo; consumo de café e álcool; nas últimas duas semanas, sentiu-se para baixo ou sem esperança na maior parte dos dias.
 - **Suplementação:** objetivo (energia, treino, imunidade, outro); padrão alimentar (onívoro, vegetariano, vegano); atividade física por semana; exames dos últimos 6 meses (upload opcional).
 
 **Regras técnicas**
@@ -293,7 +296,7 @@ Toda a copy vende a consulta e o cuidado, nunca a fórmula: nenhum nome de ativo
 
 | # | Título | Subtítulo |
 | --- | --- | --- |
-| 1 | Cabelo, pele, sono e energia: fale com um médico sem sair de casa. | Consulta por vídeo de até 30 minutos, com médico de nome e CRM na tela. Se houver indicação, a receita é sua e você escolhe a farmácia. |
+| 1 | Marque sua consulta. | Consulta por vídeo de até 30 minutos com médico, nutricionista ou personal trainer, com nome e registro na tela. Se houver indicação, a receita é sua e você escolhe a farmácia. |
 | 2 | Um médico olha o seu caso. O plano é só seu. | Triagem de 5 minutos, consulta online agendada e acompanhamento. Sem fila, sem promessa milagrosa. |
 | 3 | Sua saúde no prumo começa com uma conversa de 30 minutos. | Médicos identificados, receita digital válida em todo o Brasil e liberdade para escolher onde manipular. |
 
@@ -308,7 +311,7 @@ Botão principal: **Começar**. Abaixo dele: "Consulta a partir de R$ 99,90 · P
 
 **Bloco de confiança:** "Médicos com nome, foto e CRM." · "Receita digital com assinatura ICP-Brasil, aceita em todo o país." · "Você manipula onde quiser. A Farmashop, de Arapongas (PR), é uma opção integrada." · "Seus dados ficam no Brasil e não são vendidos."
 
-**Para quem é / não é:** é para adultos que querem avaliar queda de cabelo, pele, sono, energia ou suplementação. Não é para urgências, menores de 18 anos, emagrecimento com remédio, saúde mental, hormônios para estética ou desempenho e remédios controlados.
+**Para quem é / não é:** é para adultos que querem cuidar de energia e disposição, dieta, treino ou suplementação. Não é para urgências, menores de 18 anos, emagrecimento com remédio, saúde mental, hormônios para estética ou desempenho e remédios controlados.
 
 **Perguntas frequentes**
 
@@ -378,7 +381,7 @@ Crie o site da Prumo, clínica de telemedicina (empresa de serviços médicos), 
 
 Marca: Prumo — "Sua saúde no prumo". Tom claro, calmo e adulto. Fontes Google: Fraunces 600 nos títulos, Inter no texto. Tokens CSS (claro/escuro): --bg #F7F5EF/#121714, --surface #FFFFFF/#1A211D, --ink #1F2A24/#EEF1EC, --muted #5E6B64/#A3AEA8, --primary #2F5D50/#7FB8A4, --primary-soft #DCE8E2/#24362F, --accent #C8873A/#D9A35F (só detalhes), --border #E3E0D6/#2A332E, --danger #B3261E/#F2B8B5. Raio 12px, botões em pílula, ícones Lucide. Elemento gráfico: linha vertical fina com pontos marcando etapas.
 
-Páginas: / (hero, como funciona em 4 passos, 4 linhas de cuidado, médicos, preço, transparência, FAQ curto, CTA), /como-funciona, /cabelo, /pele, /sono-e-energia, /suplementacao, /preco, /medicos, /transparencia, /o-que-nao-atendemos, /perguntas, /conteudo, /termos, /privacidade, /tcle, /cancelamento. Botão principal "Começar" leva a /comecar e fica fixo no rodapé no celular.
+Páginas: / (hero, como funciona em 4 passos, 4 linhas de cuidado, médicos, preço, transparência, FAQ curto, CTA), /como-funciona, /energia-e-disposicao, /dieta, /treino, /suplementacao, /preco, /medicos, /transparencia, /o-que-nao-atendemos, /perguntas, /conteudo, /termos, /privacidade, /tcle, /cancelamento. Botão principal "Começar" leva a /comecar e fica fixo no rodapé no celular.
 
 Use exatamente os textos que vou colar a seguir. Rodapé com razão social, CNPJ, registro no CRM-PR, diretor técnico com CRM e encarregado de dados (placeholders editáveis).
 
