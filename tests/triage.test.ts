@@ -12,7 +12,7 @@ describe("triagem v1", () => {
 
   it("recusa triagem que pede remédio ou sugere tratamento", () => {
     const bad = {
-      care_line: "cabelo",
+      care_line: "dieta",
       title: "x",
       questions: [{ id: "q", type: "text", label: "Qual remédio você quer usar?", required: true }],
     };
@@ -22,19 +22,19 @@ describe("triagem v1", () => {
   });
 
   it("recusa campos fora do esquema (ex.: resultado ou produto sugerido)", () => {
-    const def = { ...triageV1("cabelo"), resultado: "produto X" };
+    const def = { ...triageV1("dieta"), resultado: "produto X" };
     expect(validateDefinition(def).ok).toBe(false);
   });
 
   it("recusa referência a pergunta inexistente", () => {
-    const def = triageV1("pele");
+    const def = triageV1("treino");
     def.questions[1] = { ...def.questions[1], showIf: { q: "nao_existe", op: "eq", value: "x" } };
     expect(validateDefinition(def).ok).toBe(false);
   });
 });
 
 describe("motor da triagem", () => {
-  const def = triageV1("sono-e-energia");
+  const def = triageV1("energia-e-disposicao");
 
   it("bloqueia o fluxo quando há sinal de urgência", () => {
     expect(evaluate(def, { urgencia: ["dor_peito"] }).blocked?.kind).toBe("emergency");
@@ -73,7 +73,7 @@ describe("motor da triagem", () => {
     expect(validateAnswer(peso, 10)).toMatch(/a partir de/);
     expect(validateAnswer(peso, 70)).toBeNull();
     expect(validateAnswer(peso, undefined)).toMatch(/Responda/);
-    const fotos = triageV1("cabelo").questions.find((x) => x.id === "cabelo_fotos")!;
+    const fotos = triageV1("dieta").questions.find((x) => x.id === "dieta_exames")!;
     expect(validateAnswer(fotos, [])).toBeNull();
   });
 });

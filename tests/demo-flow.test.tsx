@@ -17,24 +17,24 @@ describe("jornada do paciente (demonstração)", () => {
 
     await api.saveProfile({ full_name: "Maria Teste", cpf: "529.982.247-25", birth_date: "1990-05-10", phone: "(43) 99999-0000" });
 
-    const v = await api.getTriageVersion("cabelo");
+    const v = await api.getTriageVersion("energia-e-disposicao");
     const answers = { sexo: "M", urgencia: ["nenhum"], relato: "Queda há meses" };
-    const triageId = await api.saveTriageDraft({ care_line: "cabelo", version_id: v.id, answers });
-    await api.submitTriage(triageId, answers, evaluate(triageV1("cabelo"), answers).alerts);
+    const triageId = await api.saveTriageDraft({ care_line: "energia-e-disposicao", version_id: v.id, answers });
+    await api.submitTriage(triageId, answers, evaluate(triageV1("energia-e-disposicao"), answers).alerts);
 
-    const slots = await api.listSlots("cabelo", new Date().toISOString(), 14);
+    const slots = await api.listSlots("energia-e-disposicao", new Date().toISOString(), 14);
     expect(slots.length).toBeGreaterThan(0);
 
     // Sem autorização de dados de saúde não reserva
     await expect(
-      api.reserveSlot({ professional_id: slots[0].professional_id, starts_at: slots[0].starts_at, care_line: "cabelo", kind: "primeira", triage_response_id: triageId }),
+      api.reserveSlot({ professional_id: slots[0].professional_id, starts_at: slots[0].starts_at, care_line: "energia-e-disposicao", kind: "primeira", triage_response_id: triageId }),
     ).rejects.toThrow(/autorização/);
 
     await api.recordConsents(["termos", "privacidade", "dados_saude"]);
     const appt = await api.reserveSlot({
       professional_id: slots[0].professional_id,
       starts_at: slots[0].starts_at,
-      care_line: "cabelo",
+      care_line: "energia-e-disposicao",
       kind: "primeira",
       triage_response_id: triageId,
     });
@@ -42,7 +42,7 @@ describe("jornada do paciente (demonstração)", () => {
     expect(appt.price_cents).toBe(9990);
 
     // O horário reservado some da lista
-    const after = await api.listSlots("cabelo", new Date().toISOString(), 14);
+    const after = await api.listSlots("energia-e-disposicao", new Date().toISOString(), 14);
     expect(after.some((s) => s.professional_id === slots[0].professional_id && s.starts_at === slots[0].starts_at)).toBe(false);
 
     const pay = await api.startPayment(appt.id);
@@ -60,11 +60,11 @@ describe("jornada do paciente (demonstração)", () => {
     await api.verifyCode("menor@teste.com", DEMO_CODE);
     await api.saveProfile({ full_name: "Joana Menor", cpf: "529.982.247-25", birth_date: "2012-01-01", phone: "43999990000" });
     await api.recordConsents(["dados_saude"]);
-    const v = await api.getTriageVersion("pele");
-    const id = await api.saveTriageDraft({ care_line: "pele", version_id: v.id, answers: {} });
+    const v = await api.getTriageVersion("dieta");
+    const id = await api.saveTriageDraft({ care_line: "dieta", version_id: v.id, answers: {} });
     await api.submitTriage(id, {}, []);
-    const [slot] = await api.listSlots("pele", new Date().toISOString(), 14);
-    await expect(api.reserveSlot({ ...slot, care_line: "pele", kind: "primeira", triage_response_id: id })).rejects.toThrow(/18 anos/);
+    const [slot] = await api.listSlots("dieta", new Date().toISOString(), 14);
+    await expect(api.reserveSlot({ ...slot, care_line: "dieta", kind: "primeira", triage_response_id: id })).rejects.toThrow(/18 anos/);
   });
 
   it("paciente não acessa o painel", async () => {
@@ -75,7 +75,7 @@ describe("jornada do paciente (demonstração)", () => {
 });
 
 describe("páginas públicas renderizam", () => {
-  const routes = ["/", "/como-funciona", "/cabelo", "/pele", "/sono-e-energia", "/suplementacao", "/preco", "/medicos", "/transparencia", "/o-que-nao-atendemos", "/perguntas", "/termos", "/privacidade", "/tcle", "/cancelamento", "/comecar"];
+  const routes = ["/", "/como-funciona", "/energia-e-disposicao", "/dieta", "/treino", "/suplementacao", "/preco", "/medicos", "/transparencia", "/o-que-nao-atendemos", "/perguntas", "/termos", "/privacidade", "/tcle", "/cancelamento", "/comecar"];
   it.each(routes)("%s", async (path) => {
     render(
       <MemoryRouter initialEntries={[path]}>

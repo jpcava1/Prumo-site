@@ -490,7 +490,7 @@ export function PanelPrices() {
 /* Triagem: editor de versões (diretor técnico) ----------------------------------------- */
 export function PanelTriage() {
   const { data: lines } = useAsync(() => api.listCareLines(), []);
-  const [line, setLine] = useState<string>("cabelo");
+  const [line, setLine] = useState<string>("energia-e-disposicao");
   const { data: versions, reload } = useAsync(() => api.directorListTriageVersions(line), [line]);
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<string[]>([]);

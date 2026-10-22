@@ -20,7 +20,7 @@ let db: Db;
 let prof1: string;
 let prof2: string;
 
-async function submittedTriage(userId: string, careLine = "cabelo"): Promise<string> {
+async function submittedTriage(userId: string, careLine = "treino"): Promise<string> {
   const [v] = await asUser<{ id: string }>(db, userId, "select id from public.triage_versions where care_line = $1 and version = 1", [careLine]);
   const [r] = await asUser<{ id: string }>(
     db,
@@ -37,7 +37,7 @@ async function firstSlot(userId: string, professionalId: string): Promise<string
   const rows = await asUser<{ professional_id: string; starts_at: string }>(
     db,
     userId,
-    "select professional_id, starts_at from public.available_slots('cabelo', (now() at time zone 'America/Sao_Paulo')::date, 3) where professional_id = $1 limit 1",
+    "select professional_id, starts_at from public.available_slots('treino', (now() at time zone 'America/Sao_Paulo')::date, 3) where professional_id = $1 limit 1",
     [professionalId],
   );
   expect(rows.length).toBe(1);
@@ -145,14 +145,14 @@ describe("agenda e reserva", () => {
     const t = await submittedTriage(MINOR);
     const slot = await firstSlot(MINOR, prof1);
     await expect(
-      asUser(db, MINOR, "select * from public.reserve_slot($1, $2, 'cabelo', 'primeira', $3)", [prof1, slot, t]),
+      asUser(db, MINOR, "select * from public.reserve_slot($1, $2, 'treino', 'primeira', $3)", [prof1, slot, t]),
     ).rejects.toThrow(/menor_de_idade/);
   });
 
   it("exige triagem enviada para a primeira consulta", async () => {
     const slot = await firstSlot(PATIENT_A, prof1);
     await expect(
-      asUser(db, PATIENT_A, "select * from public.reserve_slot($1, $2, 'cabelo', 'primeira', null)", [prof1, slot]),
+      asUser(db, PATIENT_A, "select * from public.reserve_slot($1, $2, 'treino', 'primeira', null)", [prof1, slot]),
     ).rejects.toThrow(/triagem_necessaria/);
   });
 
@@ -161,7 +161,7 @@ describe("agenda e reserva", () => {
       asUser(
         db,
         PATIENT_A,
-        "insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, price_cents) values ($1, $2, 'cabelo', now() + interval '3 days', now() + interval '3 days 30 minutes', 1)",
+        "insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, price_cents) values ($1, $2, 'treino', now() + interval '3 days', now() + interval '3 days 30 minutes', 1)",
         [PATIENT_A, prof1],
       ),
     ).rejects.toThrow(/row-level security/);
@@ -175,7 +175,7 @@ describe("agenda e reserva", () => {
     const [appt] = await asUser<{ status: string; price_cents: number; hold_expires_at: string }>(
       db,
       PATIENT_A,
-      "select * from public.reserve_slot($1, $2, 'cabelo', 'primeira', $3)",
+      "select * from public.reserve_slot($1, $2, 'treino', 'primeira', $3)",
       [prof1, slot, tA],
     );
     expect(appt.status).toBe("reservado");
@@ -183,13 +183,13 @@ describe("agenda e reserva", () => {
     expect(new Date(appt.hold_expires_at).getTime()).toBeGreaterThan(Date.now());
 
     await expect(
-      asUser(db, PATIENT_B, "select * from public.reserve_slot($1, $2, 'cabelo', 'primeira', $3)", [prof1, slot, tB]),
+      asUser(db, PATIENT_B, "select * from public.reserve_slot($1, $2, 'treino', 'primeira', $3)", [prof1, slot, tB]),
     ).rejects.toThrow(/horario_indisponivel/);
 
     const free = await asUser<{ starts_at: string }>(
       db,
       PATIENT_B,
-      "select starts_at from public.available_slots('cabelo', (now() at time zone 'America/Sao_Paulo')::date, 3) where professional_id = $1",
+      "select starts_at from public.available_slots('treino', (now() at time zone 'America/Sao_Paulo')::date, 3) where professional_id = $1",
       [prof1],
     );
     expect(free.map((r) => new Date(r.starts_at).toISOString())).not.toContain(slot);
@@ -199,7 +199,7 @@ describe("agenda e reserva", () => {
     const [row] = await asAdmin<{ id: string }>(
       db,
       `insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, status, price_cents)
-       values ($1, $2, 'cabelo', now() + interval '5 days', now() + interval '5 days 30 minutes', 'confirmado', 9990) returning id`,
+       values ($1, $2, 'treino', now() + interval '5 days', now() + interval '5 days 30 minutes', 'confirmado', 9990) returning id`,
       [PATIENT_B, prof2],
     );
     const [res] = await asUser<{ r: { charged: boolean } }>(db, PATIENT_B, "select public.cancel_appointment($1) r", [row.id]);
@@ -213,7 +213,7 @@ describe("agenda e reserva", () => {
     const [row] = await asAdmin<{ id: string }>(
       db,
       `insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, status, price_cents)
-       values ($1, $2, 'cabelo', now() + interval '1 hour', now() + interval '90 minutes', 'confirmado', 9990) returning id`,
+       values ($1, $2, 'treino', now() + interval '1 hour', now() + interval '90 minutes', 'confirmado', 9990) returning id`,
       [PATIENT_B, prof2],
     );
     const [res] = await asUser<{ r: { charged: boolean } }>(db, PATIENT_B, "select public.cancel_appointment($1) r", [row.id]);
@@ -227,18 +227,18 @@ describe("médico, documentos e repasse", () => {
   let docId: string;
 
   beforeAll(async () => {
-    const t = await submittedTriage(PATIENT_A, "pele");
+    const t = await submittedTriage(PATIENT_A, "dieta");
     const [a] = await asAdmin<{ id: string }>(
       db,
       `insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, status, price_cents, triage_response_id)
-       values ($1, $2, 'pele', now() - interval '2 days', now() - interval '2 days' + interval '30 minutes', 'realizado', 9990, $3) returning id`,
+       values ($1, $2, 'dieta', now() - interval '2 days', now() - interval '2 days' + interval '30 minutes', 'realizado', 9990, $3) returning id`,
       [PATIENT_A, prof1, t],
     );
     apptId = a.id;
     const [b] = await asAdmin<{ id: string }>(
       db,
       `insert into public.appointments (patient_id, professional_id, care_line, starts_at, ends_at, status, price_cents)
-       values ($1, $2, 'pele', now() - interval '1 day', now() - interval '1 day' + interval '30 minutes', 'realizado', 9990) returning id`,
+       values ($1, $2, 'dieta', now() - interval '1 day', now() - interval '1 day' + interval '30 minutes', 'realizado', 9990) returning id`,
       [PATIENT_B, prof1],
     );
     apptNoDoc = b.id;
@@ -300,9 +300,9 @@ describe("médico, documentos e repasse", () => {
 
 describe("governança da triagem", () => {
   it("só o diretor técnico publica nova versão", async () => {
-    const def = JSON.stringify({ care_line: "cabelo", title: "x", questions: [{ id: "a", type: "text", label: "Pergunta teste" }] });
-    await expect(asUser(db, ADMIN, "select * from public.publish_triage_version('cabelo', $1::jsonb)", [def])).rejects.toThrow(/sem_permissao/);
-    const [v] = await asUser<{ version: number }>(db, DIRECTOR, "select * from public.publish_triage_version('cabelo', $1::jsonb)", [def]);
+    const def = JSON.stringify({ care_line: "treino", title: "x", questions: [{ id: "a", type: "text", label: "Pergunta teste" }] });
+    await expect(asUser(db, ADMIN, "select * from public.publish_triage_version('treino', $1::jsonb)", [def])).rejects.toThrow(/sem_permissao/);
+    const [v] = await asUser<{ version: number }>(db, DIRECTOR, "select * from public.publish_triage_version('treino', $1::jsonb)", [def]);
     expect(v.version).toBe(2);
   });
 });

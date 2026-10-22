@@ -31,9 +31,9 @@ export default function App() {
           {/* Páginas públicas */}
           <Route index element={<Home />} />
           <Route path="como-funciona" element={<HowItWorks />} />
-          <Route path="cabelo" element={<CareLinePage slug="cabelo" />} />
-          <Route path="pele" element={<CareLinePage slug="pele" />} />
-          <Route path="sono-e-energia" element={<CareLinePage slug="sono-e-energia" />} />
+          <Route path="energia-e-disposicao" element={<CareLinePage slug="energia-e-disposicao" />} />
+          <Route path="dieta" element={<CareLinePage slug="dieta" />} />
+          <Route path="treino" element={<CareLinePage slug="treino" />} />
           <Route path="suplementacao" element={<CareLinePage slug="suplementacao" />} />
           <Route path="preco" element={<Pricing />} />
           <Route path="medicos" element={<Doctors />} />

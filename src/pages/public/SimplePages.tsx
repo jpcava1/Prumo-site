@@ -53,8 +53,8 @@ export function FaqPage() {
 
 /** Conteúdo educativo (SEO). Escreva sobre o tema, nunca sobre produto ou ativo. */
 const articles = [
-  { title: "Queda de cabelo: quando é hora de procurar um médico", lead: "Os sinais que diferenciam uma fase passageira de algo que merece avaliação." },
-  { title: "Protetor solar todos os dias: o que muda na pele", lead: "Por que o hábito mais simples é também o mais estudado." },
+  { title: "Cansaço que não passa: quando é hora de procurar um médico", lead: "Os sinais que diferenciam uma semana puxada de algo que merece avaliação." },
+  { title: "Começar a treinar depois dos 40: o que avaliar antes", lead: "Coração, articulações e rotina: o básico para treinar com segurança." },
   { title: "Higiene do sono: 7 ajustes antes de pensar em remédio", lead: "Rotina, luz, telas, café e álcool: o que a ciência diz." },
   { title: "Suplementar ou não? Perguntas para fazer antes", lead: "Alimentação, exames e objetivo vêm antes de qualquer suplemento." },
 ];

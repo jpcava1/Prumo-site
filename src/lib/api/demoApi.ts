@@ -369,7 +369,7 @@ export function createDemoApi(): Api {
       requireRole("doctor", "medical_director");
       const a = appointments.find((x) => x.id === appointmentId);
       const t = triage.find((x) => x.id === a?.triage_response_id);
-      const def = versions.find((v) => v.id === t?.version_id)?.definition ?? triageV1("cabelo");
+      const def = versions.find((v) => v.id === t?.version_id)?.definition ?? triageV1("energia-e-disposicao");
       const p = a ? profiles.get(a.patient_id) : undefined;
       return delay({
         definition: def,
