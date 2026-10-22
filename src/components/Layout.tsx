@@ -20,7 +20,7 @@ export function Logo({ className, light }: { className?: string; light?: boolean
 const nav = [
   { to: "/como-funciona", label: "Como funciona" },
   { to: "/preco", label: "Preço" },
-  { to: "/medicos", label: "Médicos" },
+  { to: "/medicos", label: "Equipe" },
   { to: "/transparencia", label: "Transparência" },
   { to: "/perguntas", label: "Perguntas" },
 ];
