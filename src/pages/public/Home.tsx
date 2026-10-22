@@ -3,8 +3,6 @@ import { ArrowRight, BadgeCheck, ShieldCheck, Store } from "lucide-react";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { careLineContent, launchSlugs } from "@/content/careLines";
 import { faq } from "@/content/faq";
-import { formatBRL } from "@/lib/utils";
-import { lowestPrice, useCareLines } from "@/hooks/useData";
 import { track } from "@/lib/analytics";
 
 export const steps = [
@@ -31,9 +29,6 @@ export function StepsLine() {
 }
 
 export default function Home() {
-  const { data: lines } = useCareLines();
-  const price = lowestPrice(lines);
-
   return (
     <>
       {/* Hero */}
@@ -64,7 +59,7 @@ export default function Home() {
               {[
                 ["Formato", "Vídeo, com médico identificado"],
                 ["Duração", "Até 30 minutos"],
-                ["Pagamento", "Pix ou cartão em até 3x"],
+                ["Depois da consulta", "Seu Plano e receita em PDF"],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-baseline justify-between gap-4 py-3">
                   <dt className="text-sm text-muted">{k}</dt>
@@ -72,12 +67,6 @@ export default function Home() {
                 </div>
               ))}
             </dl>
-            {price && (
-              <p className="mt-6 flex items-baseline gap-2">
-                <span className="font-display text-5xl font-medium text-primary tabular-nums">{formatBRL(price)}</span>
-                <span className="text-sm text-muted">por consulta</span>
-              </p>
-            )}
           </div>
         </div>
       </section>

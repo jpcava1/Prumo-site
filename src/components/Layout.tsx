@@ -24,7 +24,6 @@ export function Logo({ className }: { className?: string }) {
 
 const nav = [
   { to: "/como-funciona", label: "Como funciona" },
-  { to: "/preco", label: "Preço" },
   { to: "/medicos", label: "Médicos" },
   { to: "/perguntas", label: "Dúvidas" },
 ];

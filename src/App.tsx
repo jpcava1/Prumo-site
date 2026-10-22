@@ -1,11 +1,10 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { SiteLayout } from "@/components/Layout";
 import { RequireAuth, RequireProfessional, RequireRole } from "@/components/Guards";
 import { FlowProvider } from "@/context/FlowContext";
 import Home from "@/pages/public/Home";
 import HowItWorks from "@/pages/public/HowItWorks";
 import CareLinePage from "@/pages/public/CareLinePage";
-import Pricing from "@/pages/public/Pricing";
 import Doctors from "@/pages/public/Doctors";
 import Transparency from "@/pages/public/Transparency";
 import { ContentPage, FaqPage, NotFound, NotServed } from "@/pages/public/SimplePages";
@@ -37,7 +36,8 @@ export default function App() {
           <Route path="pele" element={<CareLinePage slug="pele" />} />
           <Route path="sono-e-energia" element={<CareLinePage slug="sono-e-energia" />} />
           <Route path="suplementacao" element={<CareLinePage slug="suplementacao" />} />
-          <Route path="preco" element={<Pricing />} />
+          {/* O valor aparece só no pagamento, depois da triagem e do horário. */}
+          <Route path="preco" element={<Navigate to="/como-funciona" replace />} />
           <Route path="medicos" element={<Doctors />} />
           <Route path="transparencia" element={<Transparency />} />
           <Route path="o-que-nao-atendemos" element={<NotServed />} />

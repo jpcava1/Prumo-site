@@ -39,14 +39,14 @@ describe("jornada do paciente (demonstração)", () => {
       triage_response_id: triageId,
     });
     expect(appt.status).toBe("reservado");
-    expect(appt.price_cents).toBe(9990);
+    expect(appt.price_cents).toBe(19900);
 
     // O horário reservado some da lista
     const after = await api.listSlots("cabelo", new Date().toISOString(), 14);
     expect(after.some((s) => s.professional_id === slots[0].professional_id && s.starts_at === slots[0].starts_at)).toBe(false);
 
     const pay = await api.startPayment(appt.id);
-    expect(pay.amount_cents).toBe(9990);
+    expect(pay.amount_cents).toBe(19900);
     await api.demoConfirmPayment!(appt.id);
     expect((await api.getAppointment(appt.id))?.status).toBe("confirmado");
 
